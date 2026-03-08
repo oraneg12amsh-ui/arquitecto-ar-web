@@ -32,7 +32,7 @@
         .interactive { pointer-events: auto; }
         .ui-control { touch-action: none; }
 
-        /* Estilo Botón AR Nativo */
+        /* Estilo Botón AR Nativo (Three.js) */
         #ARButton { 
             background: #3B82F6 !important; color: white !important; border-radius: 9999px !important; 
             padding: 16px 32px !important; font-size: 1.125rem !important; font-family: 'Nunito', sans-serif !important;
@@ -43,8 +43,8 @@
 
         /* Etiqueta Flotante AR (Pill) */
         .measure-pill {
-            position: absolute; background: rgba(30, 41, 59, 0.9); color: #fff; padding: 6px 14px; border-radius: 9999px;
-            font-weight: 700; font-size: 0.9rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: absolute; background: rgba(30, 41, 59, 0.9); color: #fff; padding: 8px 16px; border-radius: 9999px;
+            font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             transform: translate(-50%, -100%); pointer-events: none; display: none; white-space: nowrap; z-index: 20;
             border: 1px solid rgba(255,255,255,0.2); margin-top: -15px; backdrop-filter: blur(4px);
         }
@@ -61,7 +61,7 @@
         }
         #tools-sheet.open { bottom: 0; }
         
-        .tool-grid-item { display: flex; flex-direction: column; items-center; justify-center; padding: 15px; border-radius: 20px; border: 2px solid transparent; background: #F8FAFC; transition: all 0.2s; }
+        .tool-grid-item { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; border-radius: 20px; border: 2px solid transparent; background: #F8FAFC; transition: all 0.2s; cursor: pointer; }
         .tool-grid-item.active { border-color: #3B82F6; background: #EFF6FF; }
         .tool-icon-wrapper { width: 50px; height: 50px; border-radius: 15px; background: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #1E293B; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin: 0 auto 10px auto; }
         .tool-grid-item.active .tool-icon-wrapper { color: #3B82F6; }
@@ -73,10 +73,6 @@
         /* Modals */
         .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 100; display: none; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
-
-        /* Toggles Settings */
-        .toggle-checkbox:checked { right: 0; border-color: #3B82F6; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #3B82F6; }
     </style>
 </head>
 <body>
@@ -93,18 +89,18 @@
             </button>
         </div>
 
-        <!-- Banner Principal -->
+        <!-- Banner Principal AR -->
         <div class="bg-gradient-to-br from-[#3B82F6] to-[#6366F1] rounded-3xl p-6 text-white shadow-xl shadow-blue-500/30 mb-8 relative overflow-hidden">
             <div class="relative z-10">
                 <h2 class="text-2xl font-bold mb-2">Nueva Medición</h2>
-                <p class="text-blue-100 text-sm mb-6 w-2/3">Inicia la cámara AR para calcular áreas, volúmenes y distancias en tiempo real.</p>
+                <p class="text-blue-100 text-sm mb-6 w-2/3">Inicia la cámara AR para calcular áreas, volúmenes, circunferencias y distancias en tiempo real.</p>
                 <div id="ar-button-container"></div> <!-- Botón AR Inyectado aquí -->
             </div>
             <i class="fa-solid fa-cube absolute -right-4 -bottom-4 text-8xl text-white opacity-20 transform -rotate-12"></i>
         </div>
 
         <!-- Opciones Rápidas -->
-        <h3 class="text-lg font-bold text-slate-800 mb-4">Gestión</h3>
+        <h3 class="text-lg font-bold text-slate-800 mb-4">Gestión de Proyectos</h3>
         <div class="grid grid-cols-2 gap-4">
             <button class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3 active:scale-95 text-left" onclick="openScreen('archive-screen')">
                 <div class="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center text-lg">
@@ -122,7 +118,7 @@
                 </div>
                 <div>
                     <span class="block font-bold text-slate-800">Planos 2D</span>
-                    <span class="text-xs text-slate-400 font-semibold">Ver blueprint</span>
+                    <span class="text-xs text-slate-400 font-semibold">Ver blueprints</span>
                 </div>
             </button>
         </div>
@@ -131,20 +127,21 @@
     <!-- ==================== 2. CAPA UI AR (DOM OVERLAY) ==================== -->
     <div id="ar-ui-layer" class="screen-layer">
         
+        <!-- Etiqueta de Medición en Vivo -->
         <div id="measure-label" class="measure-pill">0.00 m</div>
 
         <!-- Header AR -->
         <div class="flex justify-between items-start w-full relative z-10">
             <!-- Botón Salir -->
             <button id="btn-exit-ar" class="interactive ui-control bg-white/90 backdrop-blur w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-slate-700 text-xl active:scale-90">
-                <i class="fa-solid fa-xmark"></i>
+                <i class="fa-solid fa-arrow-left"></i>
             </button>
             
             <!-- Indicador de Herramienta Actual -->
-            <div class="bg-white/90 backdrop-blur px-5 h-12 rounded-full shadow-lg flex items-center justify-center gap-2 text-slate-800 font-bold text-sm border border-slate-100">
+            <button id="btn-top-tool" class="interactive ui-control bg-white/90 backdrop-blur px-5 h-12 rounded-full shadow-lg flex items-center justify-center gap-2 text-slate-800 font-bold text-sm border border-slate-100 active:scale-95">
                 <i id="current-tool-icon" class="fa-solid fa-ruler text-[#3B82F6]"></i>
-                <span id="current-tool-name">Distancia</span>
-            </div>
+                <span id="current-tool-name">Línea</span>
+            </button>
 
             <!-- Botón Deshacer -->
             <button id="btn-undo-ar" class="interactive ui-control bg-white/90 backdrop-blur w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-slate-700 text-lg active:scale-90 relative">
@@ -168,59 +165,61 @@
                 <span class="text-[9px] font-bold">Tools</span>
             </button>
 
-            <!-- Botón Principal (+) -->
-            <button id="btn-main-action" class="ui-control bg-[#3B82F6] text-white w-20 h-20 rounded-full shadow-[0_10px_25px_rgba(59,130,246,0.5)] flex flex-col items-center justify-center active:scale-90 transition-transform hidden border-4 border-white/20">
-                <i id="btn-action-icon" class="fa-solid fa-plus text-3xl"></i>
-            </button>
+            <!-- Acciones Centrales -->
+            <div class="flex gap-2">
+                <!-- Botón Principal (+) -->
+                <button id="btn-main-action" class="ui-control bg-[#3B82F6] text-white w-20 h-20 rounded-full shadow-[0_10px_25px_rgba(59,130,246,0.5)] flex flex-col items-center justify-center active:scale-90 transition-transform hidden border-4 border-white/20">
+                    <i id="btn-action-icon" class="fa-solid fa-plus text-3xl"></i>
+                </button>
+                
+                <!-- Botón Terminar (Solo para Camino/Polyline) -->
+                <button id="btn-finish-path" class="ui-control bg-emerald-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform hidden self-center">
+                    <i class="fa-solid fa-check text-xl"></i>
+                </button>
+            </div>
 
-            <!-- Botón Borrar Todo / Finish -->
+            <!-- Botón Borrar Dibujo Actual -->
             <button id="btn-clear-ar" class="ui-control bg-white/95 backdrop-blur w-14 h-14 rounded-2xl shadow-xl flex flex-col items-center justify-center text-rose-500 active:scale-95 border border-slate-100">
                 <i class="fa-solid fa-trash-can text-lg mb-0.5"></i>
-                <span class="text-[9px] font-bold">Borrar</span>
+                <span class="text-[9px] font-bold">Limpiar</span>
             </button>
         </div>
 
         <!-- ================= BOTTOM SHEET HERRAMIENTAS ================= -->
         <div id="tools-sheet" class="interactive ui-control">
             <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
-            <h3 class="text-xl font-black text-slate-800 mb-4 px-2">Seleccionar herramienta</h3>
+            <h3 class="text-xl font-black text-slate-800 mb-4 px-2">Herramientas de Medición</h3>
             
             <div class="grid grid-cols-3 gap-3 overflow-y-auto max-h-[50vh] px-2 pb-4">
-                <!-- Distancia -->
-                <div class="tool-grid-item active" data-tool="line" data-name="Distancia" data-icon="fa-ruler">
+                <div class="tool-grid-item active" data-tool="line" data-name="Línea" data-icon="fa-ruler">
                     <div class="tool-icon-wrapper"><i class="fa-solid fa-ruler"></i></div>
                     <span class="text-xs font-bold text-center text-slate-700">Línea</span>
-                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Distancia entre 2 puntos</span>
+                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Distancia simple</span>
                 </div>
-                <!-- Camino -->
                 <div class="tool-grid-item" data-tool="path" data-name="Camino" data-icon="fa-route">
                     <div class="tool-icon-wrapper"><i class="fa-solid fa-route"></i></div>
                     <span class="text-xs font-bold text-center text-slate-700">Camino</span>
                     <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Múltiples segmentos</span>
                 </div>
-                <!-- Rectángulo -->
                 <div class="tool-grid-item" data-tool="area" data-name="Rectángulo" data-icon="fa-square">
                     <div class="tool-icon-wrapper"><i class="fa-regular fa-square"></i></div>
-                    <span class="text-xs font-bold text-center text-slate-700">Área</span>
-                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Detección rectángulo</span>
+                    <span class="text-xs font-bold text-center text-slate-700">Rectángulo</span>
+                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Área de piso/pared</span>
                 </div>
-                <!-- Cubo -->
                 <div class="tool-grid-item" data-tool="volume" data-name="Volumen" data-icon="fa-cube">
                     <div class="tool-icon-wrapper"><i class="fa-solid fa-cube"></i></div>
-                    <span class="text-xs font-bold text-center text-slate-700">Volumen</span>
+                    <span class="text-xs font-bold text-center text-slate-700">Cubo</span>
                     <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Base + Altura 3D</span>
                 </div>
-                <!-- Círculo -->
                 <div class="tool-grid-item" data-tool="circle" data-name="Círculo" data-icon="fa-circle-dot">
                     <div class="tool-icon-wrapper"><i class="fa-regular fa-circle-dot"></i></div>
                     <span class="text-xs font-bold text-center text-slate-700">Círculo</span>
                     <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Centro y radio</span>
                 </div>
-                <!-- Ángulo -->
                 <div class="tool-grid-item" data-tool="angle" data-name="Ángulo" data-icon="fa-angle-left">
                     <div class="tool-icon-wrapper"><i class="fa-solid fa-angle-left"></i></div>
                     <span class="text-xs font-bold text-center text-slate-700">Ángulo</span>
-                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Calcular grados</span>
+                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Grados en esquinas</span>
                 </div>
             </div>
             <button id="btn-close-tools" class="mt-4 w-full py-4 bg-slate-100 text-slate-700 font-bold rounded-2xl active:bg-slate-200">Cerrar Menú</button>
@@ -234,9 +233,9 @@
                 <i class="fa-solid fa-tag"></i>
             </div>
             <h3 class="text-xl font-black text-center text-slate-800 mb-2">Guardar Medición</h3>
-            <p class="text-sm text-center text-slate-500 mb-5">Asigna un nombre a esta zona u objeto para identificarlo en el plano.</p>
+            <p class="text-sm text-center text-slate-500 mb-5">Asigna un nombre a esta zona u objeto para identificarlo en el plano y archivo.</p>
             
-            <input type="text" id="rename-input" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-bold mb-4 focus:outline-none focus:border-blue-500 text-center" placeholder="Ej. Puerta Principal, Habitación 1...">
+            <input type="text" id="rename-input" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-bold mb-4 focus:outline-none focus:border-blue-500 text-center" placeholder="Ej. Puerta Principal, Ventana...">
             
             <div class="flex gap-3">
                 <button id="btn-rename-skip" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl active:bg-slate-200">Omitir</button>
@@ -256,7 +255,7 @@
         
         <p class="text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">Tus Mediciones</p>
         <div id="archive-list" class="flex flex-col gap-3 pb-20">
-            <!-- Items Inyectados por JS -->
+            <!-- Items inyectados por JS -->
         </div>
     </div>
 
@@ -271,30 +270,23 @@
         
         <div class="bg-[#24283B] rounded-3xl p-5 mb-6 shadow-xl border border-slate-700/50">
             <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-4">
-                <span class="text-white font-bold">Unidades</span>
+                <span class="text-white font-bold">Unidades de Medida</span>
                 <select id="unit-select" class="bg-[#1A1D2D] text-[#38BDF8] border border-[#38BDF8]/30 font-bold rounded-lg px-3 py-2 outline-none">
                     <option value="m">Metros (m)</option>
                     <option value="cm">Centímetros (cm)</option>
-                    <option value="ft">Pies (ft)</option>
                     <option value="in">Pulgadas (in)</option>
+                    <option value="ft">Pies (ft)</option>
                 </select>
             </div>
             
-            <!-- Toggles visuales (Simulados UI) -->
             <div class="flex flex-col gap-4">
                 <div class="flex justify-between items-center">
-                    <span class="text-slate-300 font-semibold text-sm"><i class="fa-solid fa-camera mr-2 text-slate-500"></i> Auto Focus</span>
-                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10"/>
-                        <label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-600 cursor-pointer"></label>
-                    </div>
+                    <span class="text-slate-300 font-semibold text-sm"><i class="fa-solid fa-mobile-screen mr-2 text-slate-500"></i> Vibración Háptica</span>
+                    <input type="checkbox" id="toggle-vib" checked class="w-5 h-5 accent-[#38BDF8]">
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-slate-300 font-semibold text-sm"><i class="fa-solid fa-mobile-screen mr-2 text-slate-500"></i> Vibración Háptica</span>
-                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" id="toggle-vib" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10"/>
-                        <label class="toggle-label block overflow-hidden h-5 rounded-full bg-slate-600 cursor-pointer"></label>
-                    </div>
+                    <span class="text-slate-300 font-semibold text-sm"><i class="fa-solid fa-camera mr-2 text-slate-500"></i> Auto Enfoque</span>
+                    <input type="checkbox" checked class="w-5 h-5 accent-[#38BDF8]">
                 </div>
             </div>
         </div>
@@ -306,21 +298,22 @@
             <button class="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-white active:scale-95" onclick="openScreen('home-screen')">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
-            <h2 class="text-xl font-black text-white">Blueprint</h2>
+            <h2 class="text-xl font-black text-white">Blueprint 2D</h2>
             <button class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white active:scale-95 shadow-lg shadow-blue-500/40" id="btn-export-pdf">
                 <i class="fa-solid fa-download"></i>
             </button>
         </div>
         
-        <div class="bg-white rounded-2xl w-full flex-grow flex flex-col overflow-hidden shadow-2xl">
-            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <span class="font-black text-slate-800 tracking-widest text-xs uppercase">Measurements Plan</span>
+        <div class="bg-white rounded-2xl w-full flex-grow flex flex-col overflow-hidden shadow-2xl relative">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 z-10">
+                <span class="font-black text-slate-800 tracking-widest text-xs uppercase">Plano General</span>
                 <span class="text-slate-400 text-xs font-bold" id="plan-date"></span>
             </div>
             
-            <div class="w-full flex-grow relative bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTE5IDE5SDBWMGgxOXYxOXoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2YxZjVmOSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+')]">
-                <canvas id="plan-canvas" class="absolute top-0 left-0 w-full h-full"></canvas>
-            </div>
+            <!-- Grid Background para Plano -->
+            <div class="w-full h-full absolute top-0 left-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTE5IDE5SDBWMGgxOXYxOXoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2YxZjVmOSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+')] z-0"></div>
+            
+            <canvas id="plan-canvas" class="absolute top-14 left-0 w-full h-[calc(100%-3.5rem)] z-10"></canvas>
         </div>
     </div>
 
@@ -328,7 +321,7 @@
         import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
         import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/ARButton.js';
 
-        // --- Navegación UI ---
+        // --- Navegación ---
         window.openScreen = function(id) {
             document.querySelectorAll('.screen-layer').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -337,33 +330,35 @@
             if(id === 'home-screen') renderHomeStats();
         }
 
-        // --- Variables de Estado AR ---
-        let appUnit = 'm'; // m, cm, ft, in
+        // --- Estado Global de la App ---
+        let appUnit = 'm'; 
         let currentTool = 'line'; 
         let arState = 'scanning'; 
         let currentMeasurePoints = []; 
         let savedProjects = JSON.parse(localStorage.getItem('arqui_projects') || '[]');
-        let tempMeasurementData = null; // Guarda la data temporal antes de renombrar
+        let tempMeasurementData = null; 
         
         let camera, scene, renderer, controller, reticle;
         let hitTestSource = null, hitTestSourceRequested = false;
         let tempMeshes = [], gridHelper = null;
 
-        // UI Elementos AR
+        // UI Elements AR
         const instText = document.getElementById('ar-instruction');
         const btnMain = document.getElementById('btn-main-action');
         const btnIcon = document.getElementById('btn-action-icon');
+        const btnFinishPath = document.getElementById('btn-finish-path');
         const measurePill = document.getElementById('measure-label');
         const ptCounter = document.getElementById('point-counter');
 
-        // Configuración Inicial
+        // Config Inicial
         renderHomeStats();
         init3D();
         animate();
 
-        // --- UI Events (Bottom Sheet & Tools) ---
+        // --- Eventos Menú Herramientas ---
         const toolsSheet = document.getElementById('tools-sheet');
         document.getElementById('btn-open-tools').addEventListener('click', () => toolsSheet.classList.add('open'));
+        document.getElementById('btn-top-tool').addEventListener('click', () => toolsSheet.classList.add('open'));
         document.getElementById('btn-close-tools').addEventListener('click', () => toolsSheet.classList.remove('open'));
 
         document.querySelectorAll('.tool-grid-item').forEach(item => {
@@ -372,21 +367,20 @@
                 const target = e.currentTarget;
                 target.classList.add('active');
                 
-                // Actualizar Toolbar Top
                 currentTool = target.dataset.tool;
                 document.getElementById('current-tool-name').innerText = target.dataset.name;
                 document.getElementById('current-tool-icon').className = `fa-solid ${target.dataset.icon} text-[#3B82F6]`;
                 
                 toolsSheet.classList.remove('open');
-                resetCurrentTool();
+                clearCurrentToolAR();
             });
         });
 
+        // Eventos Ajustes y Modal
         document.getElementById('unit-select').addEventListener('change', (e) => { appUnit = e.target.value; renderArchive(); });
         
-        // Modal Rename Events
         document.getElementById('btn-rename-skip').addEventListener('click', () => {
-            saveMeasurementToArchive(tempMeasurementData.toolName); // Nombre por defecto
+            saveMeasurementToArchive(tempMeasurementData.toolName);
             document.getElementById('rename-modal').classList.remove('active');
         });
         document.getElementById('btn-rename-save').addEventListener('click', () => {
@@ -395,7 +389,7 @@
             document.getElementById('rename-modal').classList.remove('active');
         });
 
-        // --- Inicialización Three.js WebXR ---
+        // --- Funciones AR (Three.js) ---
         function init3D() {
             const container = document.getElementById('ar-container');
             scene = new THREE.Scene();
@@ -403,8 +397,7 @@
             
             scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.8));
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            dirLight.position.set(1, 5, 1);
-            scene.add(dirLight);
+            dirLight.position.set(1, 5, 1); scene.add(dirLight);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
@@ -423,7 +416,7 @@
             controller = renderer.xr.getController(0);
             scene.add(controller);
 
-            // Sensor Retícula Pro
+            // Sensor Retícula
             reticle = new THREE.Group();
             reticle.add(new THREE.Mesh(new THREE.RingGeometry(0.08, 0.09, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false })));
             reticle.add(new THREE.Mesh(new THREE.CircleGeometry(0.08, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x3B82F6, opacity: 0.3, transparent: true, depthTest: false })));
@@ -437,15 +430,18 @@
             gridHelper.material.opacity = 0.15; gridHelper.material.transparent = true; gridHelper.visible = false;
             scene.add(gridHelper);
 
-            // Eventos Botones AR
+            // Botones AR
             btnMain.addEventListener('beforexrselect', (ev) => ev.preventDefault());
             btnMain.addEventListener('click', handleToolAction);
+            
+            btnFinishPath.addEventListener('beforexrselect', (ev) => ev.preventDefault());
+            btnFinishPath.addEventListener('click', procesarMedicionFinal);
             
             document.getElementById('btn-undo-ar').addEventListener('beforexrselect', (ev) => ev.preventDefault());
             document.getElementById('btn-undo-ar').addEventListener('click', undoLastPoint);
             
             document.getElementById('btn-clear-ar').addEventListener('beforexrselect', (ev) => ev.preventDefault());
-            document.getElementById('btn-clear-ar').addEventListener('click', clearAllAR);
+            document.getElementById('btn-clear-ar').addEventListener('click', clearCurrentToolAR);
             
             document.getElementById('btn-exit-ar').addEventListener('beforexrselect', (ev) => ev.preventDefault());
             document.getElementById('btn-exit-ar').addEventListener('click', () => renderer.xr.getSession()?.end());
@@ -455,32 +451,36 @@
             });
         }
 
-        // --- Lógica de Medición AR ---
         function resetARSession() {
             arState = 'scanning';
             gridHelper.visible = false;
             btnMain.classList.add('hidden');
+            btnFinishPath.classList.add('hidden');
             instText.innerText = "Mueve el dispositivo mirando al piso";
-            clearAllAR();
+            clearCurrentToolAR();
         }
 
-        function resetCurrentTool() {
+        function clearCurrentToolAR() {
             currentMeasurePoints = [];
             tempMeshes.forEach(m => scene.remove(m));
             tempMeshes = [];
             updateStepInstruction();
         }
 
-        function clearAllAR() {
-            resetCurrentTool();
-            // Para simplicidad, no borramos los permanentes de la escena aquí, solo la memoria de la herramienta activa.
-            // Si quieres que limpie todo el canvas AR, tendrías que iterar sobre los objetos añadidos.
-        }
-
         function undoLastPoint() {
             if(currentMeasurePoints.length > 0) {
                 currentMeasurePoints.pop();
                 const m = tempMeshes.pop(); if(m) scene.remove(m);
+                
+                // Si es camino, debemos borrar también la línea temporal si existe
+                if(currentTool === 'path' && tempMeshes.length > 0) {
+                    const line = tempMeshes.pop(); scene.remove(line); 
+                    // Redibujar la línea con los puntos restantes
+                    if (currentMeasurePoints.length > 1) {
+                        const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(currentMeasurePoints), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 }));
+                        scene.add(l); tempMeshes.push(l);
+                    }
+                }
                 updateStepInstruction();
             }
         }
@@ -489,23 +489,23 @@
             const pts = currentMeasurePoints.length;
             ptCounter.innerText = pts;
             ptCounter.classList.toggle('hidden', pts === 0);
-            btnIcon.className = pts === 0 ? "fa-solid fa-crosshairs text-3xl" : "fa-solid fa-check text-3xl";
-            btnMain.classList.toggle('bg-[#3B82F6]', pts === 0);
-            btnMain.classList.toggle('bg-emerald-500', pts > 0);
+            
+            if(arState === 'scanning') return;
+            
+            btnMain.classList.remove('hidden');
+            btnFinishPath.classList.toggle('hidden', !(currentTool === 'path' && pts >= 2));
 
-            const map = {
-                'line': ['Punto inicial', 'Punto final (Terminar)'],
-                'path': [`Añadir punto ${pts+1}`, 'Añadir o pulsar Deshacer'],
-                'area': ['Esquina 1', 'Esquina opuesta diagonal'],
-                'volume': ['Base: Esquina 1', 'Base: Esquina opuesta', 'Define la altura'],
-                'circle': ['Centro del círculo', 'Borde exterior (Radio)'],
-                'angle': ['Punto línea A', 'Vértice Central', 'Punto línea B']
+            const msgMap = {
+                'line': ['Punto inicial', 'Punto final'],
+                'path': [`Punto ${pts+1}`, 'Añadir más o Confirmar (✔)'],
+                'area': ['Esquina 1', 'Esquina opuesta'],
+                'volume': ['Base 1', 'Base opuesta', 'Define la altura'],
+                'circle': ['Centro del círculo', 'Radio exterior'],
+                'angle': ['Línea A', 'Vértice Central', 'Línea B']
             };
             
-            if(arState === 'ready' || arState === 'drawing') {
-                const msgs = map[currentTool];
-                instText.innerText = msgs[Math.min(pts, msgs.length-1)] || "Continuar";
-            }
+            const msgs = msgMap[currentTool];
+            instText.innerText = msgs[Math.min(pts, msgs.length-1)] || "Continuar";
         }
 
         function handleToolAction() {
@@ -515,13 +515,21 @@
             const pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
             currentMeasurePoints.push(pos.clone());
 
-            // Dibujar Nodo (Esfera)
+            // Esfera de nodo
             const node = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
             node.position.copy(pos);
             scene.add(node);
             tempMeshes.push(node);
 
-            // Validar si la herramienta terminó
+            // Para 'camino', dibujar línea entre nodos acumulados
+            if (currentTool === 'path' && currentMeasurePoints.length > 1) {
+                const geom = new THREE.BufferGeometry().setFromPoints(currentMeasurePoints);
+                const line = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 }));
+                scene.add(line);
+                tempMeshes.push(line);
+            }
+
+            // Comprobar fin automático
             let finished = false;
             const len = currentMeasurePoints.length;
             if (currentTool === 'line' && len === 2) finished = true;
@@ -529,7 +537,7 @@
             if (currentTool === 'volume' && len === 3) finished = true;
             if (currentTool === 'circle' && len === 2) finished = true;
             if (currentTool === 'angle' && len === 3) finished = true;
-            // 'path' no termina automáticamente, el usuario debe cerrarlo o confirmar (aquí simplificado, lo dejamos abierto hasta cambiar de tool)
+            // 'path' termina manualmente con el botón verde.
 
             if (finished) procesarMedicionFinal();
             else updateStepInstruction();
@@ -542,37 +550,43 @@
 
             if (currentTool === 'line') {
                 data.results.d = pts[0].distanceTo(pts[1]);
-                finalMesh.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 4 })));
+                finalMesh.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 5 })));
+            }
+            else if (currentTool === 'path') {
+                let totalD = 0;
+                for(let i=1; i<pts.length; i++) totalD += pts[i].distanceTo(pts[i-1]);
+                data.results.d = totalD;
+                finalMesh.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x38BDF8, linewidth: 5 })));
             }
             else if (currentTool === 'area') {
-                const w = Math.abs(pts[1].x - pts[0].x); const d = Math.abs(pts[1].z - pts[0].z);
+                const w = Math.abs(pts[1].x - pts[0].x), d = Math.abs(pts[1].z - pts[0].z);
                 data.results = { w, d, area: w*d, perim: (w+d)*2 };
                 const shGeom = new THREE.ShapeGeometry(new THREE.Shape().moveTo(0,0).lineTo(w,0).lineTo(w,d).lineTo(0,d).lineTo(0,0)).rotateX(Math.PI/2);
-                const mat = new THREE.MeshBasicMaterial({ color: 0x3B82F6, opacity: 0.4, transparent: true, side: THREE.DoubleSide, depthWrite: false });
+                const mat = new THREE.MeshBasicMaterial({ color: 0x3B82F6, opacity: 0.3, transparent: true, side: THREE.DoubleSide, depthWrite: false });
                 const mesh = new THREE.Mesh(shGeom, mat);
                 mesh.position.set(Math.min(pts[0].x, pts[1].x), pts[0].y, Math.min(pts[0].z, pts[1].z));
                 finalMesh.add(mesh);
                 finalMesh.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(pts[0].x, pts[0].y, pts[0].z), new THREE.Vector3(pts[1].x, pts[0].y, pts[0].z), new THREE.Vector3(pts[1].x, pts[0].y, pts[1].z), new THREE.Vector3(pts[0].x, pts[0].y, pts[1].z)]), new THREE.LineBasicMaterial({color:0xffffff, linewidth:3})));
             }
             else if (currentTool === 'volume') {
-                const w = Math.abs(pts[1].x - pts[0].x); const d = Math.abs(pts[1].z - pts[0].z); const h = Math.abs(pts[2].y - pts[0].y);
+                const w = Math.abs(pts[1].x - pts[0].x), d = Math.abs(pts[1].z - pts[0].z), h = Math.abs(pts[2].y - pts[0].y);
                 data.results = { w, d, h, volume: w*d*h };
                 const box = new THREE.BoxGeometry(w, h, d);
-                const mesh = new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color: 0x6366F1, opacity: 0.3, transparent: true }));
+                const mesh = new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color: 0x6366F1, opacity: 0.25, transparent: true }));
                 mesh.position.set((pts[0].x+pts[1].x)/2, pts[0].y + h/2, (pts[0].z+pts[1].z)/2);
                 finalMesh.add(mesh);
                 finalMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(box), new THREE.LineBasicMaterial({ color: 0xffffff })));
             }
             else if (currentTool === 'circle') {
-                const r = pts[0].distanceTo(pts[1]);
+                const r = Math.hypot(pts[1].x-pts[0].x, pts[1].z-pts[0].z); // Radio en XZ
                 data.results = { r, area: Math.PI*r*r, perim: 2*Math.PI*r };
                 const circGeom = new THREE.CircleGeometry(r, 64).rotateX(-Math.PI/2);
                 const mesh = new THREE.Mesh(circGeom, new THREE.MeshBasicMaterial({ color: 0x10B981, opacity: 0.3, transparent: true }));
-                mesh.position.copy(pts[0]); finalMesh.add(mesh);
+                mesh.position.set(pts[0].x, pts[0].y, pts[0].z); finalMesh.add(mesh);
                 
                 const edgeGeom = new THREE.BufferGeometry().setFromPoints(new THREE.Path().absarc(0,0,r,0,Math.PI*2).getPoints(64));
                 const edge = new THREE.Line(edgeGeom, new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 }));
-                edge.rotation.x = -Math.PI/2; edge.position.copy(pts[0]); finalMesh.add(edge);
+                edge.rotation.x = -Math.PI/2; edge.position.set(pts[0].x, pts[0].y, pts[0].z); finalMesh.add(edge);
             }
             else if (currentTool === 'angle') {
                 const v1 = new THREE.Vector3().subVectors(pts[0], pts[1]).normalize();
@@ -582,31 +596,29 @@
             }
 
             scene.add(finalMesh);
-            
-            // Preparar para Guardar
             tempMeasurementData = data;
             
-            // Mostrar Modal para nombrar
-            document.getElementById('rename-input').value = '';
-            document.getElementById('rename-modal').classList.add('active');
-            
-            // Reset visual temporary
+            // UI Limpieza temporal
             tempMeshes.forEach(m => scene.remove(m));
             tempMeshes = []; currentMeasurePoints = [];
             measurePill.style.display = 'none';
-            updateStepInstruction();
+            btnFinishPath.classList.add('hidden');
+            
+            // Modal
+            document.getElementById('rename-input').value = '';
+            document.getElementById('rename-modal').classList.add('active');
         }
 
         function saveMeasurementToArchive(customName) {
             tempMeasurementData.name = customName;
             savedProjects.push(tempMeasurementData);
             localStorage.setItem('arqui_projects', JSON.stringify(savedProjects));
-            instText.innerText = `¡${customName} guardado!`;
+            instText.innerText = `¡Guardado exitosamente!`;
             setTimeout(updateStepInstruction, 2000);
             renderHomeStats();
         }
 
-        // --- Utils Formato ---
+        // --- Conversión y UI en Tiempo Real ---
         function formatValue(m, isSq=false, isCb=false) {
             let val = m, symbol = 'm';
             if(appUnit === 'cm') { val = m*100; symbol = 'cm'; }
@@ -628,7 +640,6 @@
             return `${val.toFixed(2)} ${symbol}`;
         }
 
-        // --- Render Loop AR ---
         function render(t, frame) {
             if (frame) {
                 const session = renderer.xr.getSession();
@@ -650,26 +661,29 @@
                         if (arState === 'scanning') {
                             arState = 'ready';
                             gridHelper.position.y = curPos.y; gridHelper.visible = true;
-                            btnMain.classList.remove('hidden'); updateStepInstruction();
+                            updateStepInstruction();
                         }
 
-                        // Etiqueta En Vivo (Rubber-band)
+                        // Etiqueta En Vivo (Rubber-band visual)
                         if (currentMeasurePoints.length > 0) {
-                            const p0 = currentMeasurePoints[0];
+                            const p0 = currentMeasurePoints[currentMeasurePoints.length-1]; // Para line y path medimos al ultimo punto
+                            const pFirst = currentMeasurePoints[0]; // Para area/circulo
                             let liveVal = "", midPt = curPos.clone();
 
-                            if (currentTool === 'line' || currentTool === 'circle') {
-                                liveVal = formatValue(p0.distanceTo(curPos));
-                                midPt.lerp(p0, 0.5);
+                            if (currentTool === 'line') {
+                                liveVal = formatValue(p0.distanceTo(curPos)); midPt.lerp(p0, 0.5);
+                            } else if (currentTool === 'path') {
+                                liveVal = formatValue(p0.distanceTo(curPos)); midPt.lerp(p0, 0.5);
+                            } else if (currentTool === 'circle') {
+                                liveVal = `R: ${formatValue(Math.hypot(curPos.x-pFirst.x, curPos.z-pFirst.z))}`; midPt.lerp(pFirst, 0.5);
                             } else if (currentTool === 'area') {
-                                const w = Math.abs(curPos.x - p0.x), d = Math.abs(curPos.z - p0.z);
-                                liveVal = formatValue(w*d, true);
-                                midPt.set((p0.x+curPos.x)/2, p0.y, (p0.z+curPos.z)/2);
+                                const w = Math.abs(curPos.x - pFirst.x), d = Math.abs(curPos.z - pFirst.z);
+                                liveVal = formatValue(w*d, true); midPt.set((pFirst.x+curPos.x)/2, pFirst.y, (pFirst.z+curPos.z)/2);
                             } else if (currentTool === 'volume' && currentMeasurePoints.length === 2) {
-                                liveVal = formatValue(Math.abs(curPos.y - p0.y)); // Mostramos altura
-                                midPt.set(curPos.x, (p0.y+curPos.y)/2, curPos.z);
+                                liveVal = `H: ${formatValue(Math.abs(curPos.y - pFirst.y))}`; 
+                                midPt.set(curPos.x, (pFirst.y+curPos.y)/2, curPos.z);
                             } else if (currentTool === 'angle' && currentMeasurePoints.length === 2) {
-                                const v1 = new THREE.Vector3().subVectors(p0, currentMeasurePoints[1]).normalize();
+                                const v1 = new THREE.Vector3().subVectors(pFirst, currentMeasurePoints[1]).normalize();
                                 const v2 = new THREE.Vector3().subVectors(curPos, currentMeasurePoints[1]).normalize();
                                 liveVal = `${THREE.MathUtils.radToDeg(v1.angleTo(v2)).toFixed(1)}°`;
                             }
@@ -688,8 +702,8 @@
         }
         function animate() { renderer.setAnimationLoop(render); }
 
-        // --- Pantallas UI (Reactividad Simmulada) ---
-        function renderHomeStats() { document.getElementById('home-archive-count').innerText = `${savedProjects.length} mediciones`; }
+        // --- Pantallas Secundarias (Archivo, Planos, Ajustes) ---
+        function renderHomeStats() { document.getElementById('home-archive-count').innerText = `${savedProjects.length} proyectos`; }
 
         function renderArchive() {
             const list = document.getElementById('archive-list');
@@ -698,14 +712,14 @@
             savedProjects.slice().reverse().forEach((p, idx) => {
                 const dateStr = new Date(p.date).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
                 let mainRes = "";
-                if(p.tool === 'line') mainRes = `L = ${formatValue(p.results.d)}`;
+                if(p.tool === 'line' || p.tool === 'path') mainRes = `L = ${formatValue(p.results.d)}`;
                 if(p.tool === 'area') mainRes = `S = ${formatValue(p.results.area, true)}`;
                 if(p.tool === 'volume') mainRes = `V = ${formatValue(p.results.volume, false, true)}`;
-                if(p.tool === 'circle') mainRes = `R = ${formatValue(p.results.r)}`;
+                if(p.tool === 'circle') mainRes = `A = ${formatValue(p.results.area, true)}`;
                 if(p.tool === 'angle') mainRes = `A = ${p.results.angle.toFixed(1)}°`;
 
-                // Icon mapping
-                const icons = { 'line':'fa-ruler', 'area':'fa-square', 'volume':'fa-cube', 'circle':'fa-circle-dot', 'angle':'fa-angle-left', 'path':'fa-route' };
+                const icons = { 'line':'fa-ruler', 'path':'fa-route', 'area':'fa-square', 'volume':'fa-cube', 'circle':'fa-circle-dot', 'angle':'fa-angle-left' };
+                const realIdx = savedProjects.length - 1 - idx;
                 
                 list.innerHTML += `
                     <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center gap-4">
@@ -714,13 +728,13 @@
                         </div>
                         <div class="flex-grow">
                             <h4 class="font-bold text-slate-800 text-sm">${p.name}</h4>
-                            <p class="text-xs text-slate-400 font-medium">${dateStr}</p>
+                            <p class="text-[11px] text-slate-400 font-medium">${dateStr}</p>
                         </div>
                         <div class="text-right">
                             <span class="block font-black text-[#3B82F6] text-sm">${mainRes}</span>
-                            <span class="text-[10px] text-slate-400 uppercase font-bold">${p.toolName}</span>
+                            <span class="text-[9px] text-slate-400 uppercase font-bold">${p.toolName}</span>
                         </div>
-                        <button class="w-8 h-8 flex items-center justify-center text-rose-300 hover:text-rose-500 transition-colors ml-2" onclick="deleteProject(${savedProjects.length - 1 - idx})">
+                        <button class="w-8 h-8 flex items-center justify-center text-rose-300 hover:text-rose-500 transition-colors ml-2 bg-rose-50 rounded-full" onclick="deleteProject(${realIdx})">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
@@ -729,66 +743,88 @@
         }
 
         window.deleteProject = function(realIdx) {
-            if(confirm("¿Eliminar esta medición?")) {
+            if(confirm("¿Eliminar esta medición del archivo?")) {
                 savedProjects.splice(realIdx, 1);
                 localStorage.setItem('arqui_projects', JSON.stringify(savedProjects));
                 renderArchive();
             }
         }
 
-        // --- Blueprints ---
         function drawBlueprint() {
             const canvas = document.getElementById('plan-canvas');
-            canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width; canvas.height = rect.height;
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0,0, canvas.width, canvas.height);
             document.getElementById('plan-date').innerText = new Date().toLocaleDateString('es-ES').replace(/\//g, '.');
 
-            if (savedProjects.length === 0) return;
+            if (savedProjects.length === 0) {
+                ctx.fillStyle = "#94a3b8"; ctx.font = "14px Nunito"; ctx.textAlign = "center";
+                ctx.fillText("Realiza mediciones en AR para generar el plano.", canvas.width/2, canvas.height/2);
+                return;
+            }
 
             // Encontrar límites 2D XZ
             let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
             savedProjects.forEach(m => m.points.forEach(p => { minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x); minZ=Math.min(minZ,p.z); maxZ=Math.max(maxZ,p.z); }));
             
-            const margin = 40;
-            const scale = Math.min((canvas.width-margin*2) / (maxX-minX || 1), (canvas.height-margin*2) / (maxZ-minZ || 1));
+            // Si es solo un punto suelto, dar un margen artificial
+            if(maxX === minX) { maxX += 1; minX -= 1; }
+            if(maxZ === minZ) { maxZ += 1; minZ -= 1; }
+
+            const margin = 50;
+            const scale = Math.min((canvas.width-margin*2) / (maxX-minX), (canvas.height-margin*2) / (maxZ-minZ));
             const ox = (canvas.width - (maxX-minX)*scale)/2 - minX*scale;
             const oz = (canvas.height - (maxZ-minZ)*scale)/2 - minZ*scale;
 
             savedProjects.forEach((m, idx) => {
-                ctx.lineWidth = 2; ctx.strokeStyle = '#1E293B'; ctx.fillStyle = '#1E293B';
+                ctx.lineWidth = 3; ctx.strokeStyle = '#1E293B'; ctx.fillStyle = '#1E293B';
                 const pts = m.points.map(p => ({ x: ox + p.x*scale, y: oz + p.z*scale }));
                 
-                // Dibujar Forma
+                // Dibujar geometrías
                 if(m.tool === 'line' || m.tool === 'angle' || m.tool === 'path') {
                     ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
                     for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
                     ctx.stroke();
                 } else if(m.tool === 'area' || m.tool === 'volume') {
                     const w = pts[1].x - pts[0].x, h = pts[1].y - pts[0].y;
-                    ctx.fillStyle = m.tool === 'area' ? 'rgba(148, 163, 184, 0.3)' : 'rgba(59, 130, 246, 0.2)';
+                    ctx.fillStyle = m.tool === 'area' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(59, 130, 246, 0.15)';
                     ctx.fillRect(pts[0].x, pts[0].y, w, h);
                     ctx.strokeRect(pts[0].x, pts[0].y, w, h);
                 } else if(m.tool === 'circle') {
                     const rPix = m.results.r * scale;
                     ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, rPix, 0, Math.PI*2);
-                    ctx.fillStyle = 'rgba(16, 185, 129, 0.2)'; ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = 'rgba(16, 185, 129, 0.15)'; ctx.fill(); ctx.stroke();
                 }
 
-                // Etiqueta Nombre
-                ctx.fillStyle = '#3B82F6'; ctx.font = "bold 12px Nunito"; ctx.textAlign = "center";
-                ctx.fillText(`[${idx+1}] ${m.name}`, pts[0].x, pts[0].y - 10);
+                // Nodos visuales
+                ctx.fillStyle = '#3B82F6';
+                pts.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2); ctx.fill(); });
+
+                // Etiqueta (Nombre Customizado)
+                ctx.fillStyle = '#1E293B'; ctx.font = "bold 13px Nunito"; ctx.textAlign = "center";
+                
+                // Centrar etiqueta según forma
+                let tx = pts[0].x, ty = pts[0].y - 15;
+                if(m.tool === 'area' || m.tool === 'volume') { tx = (pts[0].x+pts[1].x)/2; ty = (pts[0].y+pts[1].y)/2; }
+                if(m.tool === 'line') { tx = (pts[0].x+pts[1].x)/2; ty = (pts[0].y+pts[1].y)/2 - 10; }
+                
+                // Fondo para texto
+                const textW = ctx.measureText(m.name).width;
+                ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(tx - textW/2 - 4, ty - 12, textW + 8, 16);
+                ctx.fillStyle = '#3B82F6'; ctx.fillText(m.name, tx, ty);
             });
         }
 
-        // Generar PDF
         document.getElementById('btn-export-pdf').addEventListener('click', () => {
             if(savedProjects.length === 0) return alert("No hay datos para exportar");
-            const { jsPDF } = window.jspdf; const doc = new jsPDF();
+            const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            
             doc.setFillColor(30, 41, 59); doc.rect(0,0,210,35,'F');
-            doc.setTextColor(255,255,255); doc.setFontSize(20); doc.text("Planos AR Meter Pro", 20, 22);
+            doc.setTextColor(255,255,255); doc.setFontSize(22); doc.text("Plano AR Meter Pro", 20, 23);
+            
             doc.addImage(document.getElementById('plan-canvas').toDataURL('image/png'), 'PNG', 15, 45, 180, 180);
-            doc.save('AR_Planos.pdf');
+            doc.save('AR_Blueprint.pdf');
         });
     </script>
 </body>

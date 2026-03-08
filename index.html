@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#1E1B4B">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%20%22name%22%3A%20%22AR%20Meter%20Pro%22%2C%20%22short_name%22%3A%20%22ARMeter%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%23F4F5F9%22%2C%20%22theme_color%22%3A%20%22%2338BDF8%22%20%7D">
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%20%22name%22%3A%20%22AR%20Meter%20Pro%22%2C%20%22short_name%22%3A%20%22ARMeter%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%23F4F5F9%22%2C%20%22theme_color%22%3A%20%22%233B82F6%22%20%7D">
 
     <!-- Librerías Externas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -32,25 +32,41 @@
         .interactive { pointer-events: auto; }
         .ui-control { touch-action: none; }
 
-        /* Estilo Botón AR Nativo (Three.js) */
+        /* Estilo Botón AR Nativo (Three.js) - Corregido para que inicie la cámara sin bloqueos */
         #ARButton { 
-            background: #3B82F6 !important; color: white !important; border-radius: 9999px !important; 
-            padding: 16px 32px !important; font-size: 1.125rem !important; font-family: 'Nunito', sans-serif !important;
-            font-weight: 800 !important; border: none !important; box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4) !important;
-            bottom: 40px !important; position: absolute !important; left: 50% !important; transform: translateX(-50%) !important;
-            width: 85% !important; max-width: 320px !important; display: flex !important; justify-content: center !important; align-items: center !important;
+            position: relative !important;
+            bottom: auto !important;
+            left: auto !important;
+            transform: none !important;
+            background: white !important; 
+            color: #3B82F6 !important; 
+            border-radius: 9999px !important; 
+            padding: 14px 24px !important; 
+            font-size: 1.05rem !important; 
+            font-family: 'Nunito', sans-serif !important;
+            font-weight: 800 !important; 
+            border: none !important; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+            width: 100% !important; 
+            display: inline-flex !important; 
+            justify-content: center !important; 
+            align-items: center !important;
+            cursor: pointer;
+            z-index: 20;
+            transition: transform 0.2s;
         }
+        #ARButton:active { transform: scale(0.95) !important; }
 
         /* Etiqueta Flotante AR (Pill) */
         .measure-pill {
-            position: absolute; background: rgba(30, 41, 59, 0.9); color: #fff; padding: 8px 16px; border-radius: 9999px;
+            position: absolute; background: rgba(30, 41, 59, 0.95); color: #fff; padding: 8px 16px; border-radius: 9999px;
             font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             transform: translate(-50%, -100%); pointer-events: none; display: none; white-space: nowrap; z-index: 20;
             border: 1px solid rgba(255,255,255,0.2); margin-top: -15px; backdrop-filter: blur(4px);
         }
         .measure-pill::after {
             content: ''; position: absolute; bottom: -6px; left: 50%; margin-left: -6px;
-            border-width: 6px 6px 0 6px; border-style: solid; border-color: rgba(30, 41, 59, 0.9) transparent transparent transparent;
+            border-width: 6px 6px 0 6px; border-style: solid; border-color: rgba(30, 41, 59, 0.95) transparent transparent transparent;
         }
 
         /* Bottom Sheet de Herramientas */
@@ -84,7 +100,7 @@
                 <h1 class="text-3xl font-black text-[#1E293B] tracking-tight">AR Meter <span class="text-[#3B82F6]">Pro</span></h1>
                 <p class="text-sm font-bold text-slate-400">Escáner 3D Espacial</p>
             </div>
-            <button class="w-12 h-12 bg-white rounded-full shadow-md flex items-center justify-center text-slate-600 text-xl active:scale-95" onclick="openScreen('settings-screen')">
+            <button class="w-12 h-12 bg-white rounded-full shadow-md flex items-center justify-center text-slate-600 text-xl interactive active:scale-95" onclick="openScreen('settings-screen')">
                 <i class="fa-solid fa-gear"></i>
             </button>
         </div>
@@ -93,16 +109,17 @@
         <div class="bg-gradient-to-br from-[#3B82F6] to-[#6366F1] rounded-3xl p-6 text-white shadow-xl shadow-blue-500/30 mb-8 relative overflow-hidden">
             <div class="relative z-10">
                 <h2 class="text-2xl font-bold mb-2">Nueva Medición</h2>
-                <p class="text-blue-100 text-sm mb-6 w-2/3">Inicia la cámara AR para calcular áreas, volúmenes, circunferencias y distancias en tiempo real.</p>
-                <div id="ar-button-container"></div> <!-- Botón AR Inyectado aquí -->
+                <p class="text-blue-100 text-sm mb-4 w-[85%]">Calcula áreas, volúmenes, circunferencias y distancias con la cámara.</p>
+                <!-- Contenedor donde Three.js inyectará el botón nativo (Clic seguro) -->
+                <div id="ar-button-container" class="relative z-20 interactive mt-2 w-[80%]"></div>
             </div>
-            <i class="fa-solid fa-cube absolute -right-4 -bottom-4 text-8xl text-white opacity-20 transform -rotate-12"></i>
+            <i class="fa-solid fa-cube absolute -right-4 -bottom-4 text-8xl text-white opacity-20 transform -rotate-12 pointer-events-none"></i>
         </div>
 
         <!-- Opciones Rápidas -->
         <h3 class="text-lg font-bold text-slate-800 mb-4">Gestión de Proyectos</h3>
         <div class="grid grid-cols-2 gap-4">
-            <button class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3 active:scale-95 text-left" onclick="openScreen('archive-screen')">
+            <button class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3 interactive active:scale-95 text-left" onclick="openScreen('archive-screen')">
                 <div class="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center text-lg">
                     <i class="fa-solid fa-folder-open"></i>
                 </div>
@@ -112,7 +129,7 @@
                 </div>
             </button>
             
-            <button class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3 active:scale-95 text-left" onclick="openScreen('plan-screen')">
+            <button class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3 interactive active:scale-95 text-left" onclick="openScreen('plan-screen')">
                 <div class="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-lg">
                     <i class="fa-solid fa-map"></i>
                 </div>
@@ -133,18 +150,18 @@
         <!-- Header AR -->
         <div class="flex justify-between items-start w-full relative z-10">
             <!-- Botón Salir -->
-            <button id="btn-exit-ar" class="interactive ui-control bg-white/90 backdrop-blur w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-slate-700 text-xl active:scale-90">
+            <button id="btn-exit-ar" class="interactive ui-control bg-white/90 backdrop-blur w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-slate-700 text-xl active:scale-90 transition-transform">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
             
             <!-- Indicador de Herramienta Actual -->
-            <button id="btn-top-tool" class="interactive ui-control bg-white/90 backdrop-blur px-5 h-12 rounded-full shadow-lg flex items-center justify-center gap-2 text-slate-800 font-bold text-sm border border-slate-100 active:scale-95">
+            <button id="btn-top-tool" class="interactive ui-control bg-white/90 backdrop-blur px-5 h-12 rounded-full shadow-lg flex items-center justify-center gap-2 text-slate-800 font-bold text-sm border border-slate-100 active:scale-95 transition-transform">
                 <i id="current-tool-icon" class="fa-solid fa-ruler text-[#3B82F6]"></i>
                 <span id="current-tool-name">Línea</span>
             </button>
 
             <!-- Botón Deshacer -->
-            <button id="btn-undo-ar" class="interactive ui-control bg-white/90 backdrop-blur w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-slate-700 text-lg active:scale-90 relative">
+            <button id="btn-undo-ar" class="interactive ui-control bg-white/90 backdrop-blur w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-slate-700 text-lg active:scale-90 transition-transform relative">
                 <i class="fa-solid fa-rotate-left"></i>
                 <span id="point-counter" class="absolute -top-1 -right-1 bg-[#3B82F6] text-white text-[9px] font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
             </button>
@@ -160,7 +177,7 @@
         <!-- Footer AR (Herramientas y Acción) -->
         <div class="w-full flex justify-between items-end mt-auto z-10 interactive pb-4">
             <!-- Botón Herramientas -->
-            <button id="btn-open-tools" class="ui-control bg-white/95 backdrop-blur w-14 h-14 rounded-2xl shadow-xl flex flex-col items-center justify-center text-slate-600 active:scale-95 border border-slate-100">
+            <button id="btn-open-tools" class="ui-control bg-white/95 backdrop-blur w-14 h-14 rounded-2xl shadow-xl flex flex-col items-center justify-center text-slate-600 active:scale-95 transition-transform border border-slate-100">
                 <i class="fa-solid fa-toolbox text-xl mb-0.5"></i>
                 <span class="text-[9px] font-bold">Tools</span>
             </button>
@@ -179,7 +196,7 @@
             </div>
 
             <!-- Botón Borrar Dibujo Actual -->
-            <button id="btn-clear-ar" class="ui-control bg-white/95 backdrop-blur w-14 h-14 rounded-2xl shadow-xl flex flex-col items-center justify-center text-rose-500 active:scale-95 border border-slate-100">
+            <button id="btn-clear-ar" class="ui-control bg-white/95 backdrop-blur w-14 h-14 rounded-2xl shadow-xl flex flex-col items-center justify-center text-rose-500 active:scale-95 transition-transform border border-slate-100">
                 <i class="fa-solid fa-trash-can text-lg mb-0.5"></i>
                 <span class="text-[9px] font-bold">Limpiar</span>
             </button>
@@ -222,13 +239,13 @@
                     <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Grados en esquinas</span>
                 </div>
             </div>
-            <button id="btn-close-tools" class="mt-4 w-full py-4 bg-slate-100 text-slate-700 font-bold rounded-2xl active:bg-slate-200">Cerrar Menú</button>
+            <button id="btn-close-tools" class="mt-4 w-full py-4 bg-slate-100 text-slate-700 font-bold rounded-2xl interactive active:scale-95 transition-transform">Cerrar Menú</button>
         </div>
     </div>
 
     <!-- ==================== MODAL RENOMBRAR ==================== -->
     <div id="rename-modal" class="modal-overlay">
-        <div class="bg-white p-6 rounded-3xl shadow-2xl w-11/12 max-w-sm transform transition-all fade-in">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-11/12 max-w-sm transform transition-all fade-in interactive">
             <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
                 <i class="fa-solid fa-tag"></i>
             </div>
@@ -238,8 +255,8 @@
             <input type="text" id="rename-input" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-bold mb-4 focus:outline-none focus:border-blue-500 text-center" placeholder="Ej. Puerta Principal, Ventana...">
             
             <div class="flex gap-3">
-                <button id="btn-rename-skip" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl active:bg-slate-200">Omitir</button>
-                <button id="btn-rename-save" class="flex-1 py-3 bg-blue-500 text-white font-bold rounded-xl active:bg-blue-600 shadow-lg shadow-blue-500/30">Guardar</button>
+                <button id="btn-rename-skip" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl active:bg-slate-200 transition-colors">Omitir</button>
+                <button id="btn-rename-save" class="flex-1 py-3 bg-blue-500 text-white font-bold rounded-xl active:bg-blue-600 shadow-lg shadow-blue-500/30 transition-colors">Guardar</button>
             </div>
         </div>
     </div>
@@ -247,7 +264,7 @@
     <!-- ==================== 3. PANTALLA ARCHIVO ==================== -->
     <div id="archive-screen" class="screen-layer px-6 pt-16 pb-6">
         <div class="flex items-center mb-8 gap-4">
-            <button class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-600 active:scale-95" onclick="openScreen('home-screen')">
+            <button class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-600 interactive active:scale-95" onclick="openScreen('home-screen')">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
             <h2 class="text-2xl font-black text-slate-800">Archivo</h2>
@@ -262,13 +279,13 @@
     <!-- ==================== 4. PANTALLA AJUSTES ==================== -->
     <div id="settings-screen" class="screen-layer px-6 pt-16 pb-6 bg-[#1A1D2D]">
         <div class="flex items-center mb-8 gap-4">
-            <button class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white active:scale-95" onclick="openScreen('home-screen')">
+            <button class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white interactive active:scale-95" onclick="openScreen('home-screen')">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
             <h2 class="text-2xl font-black text-white">Ajustes</h2>
         </div>
         
-        <div class="bg-[#24283B] rounded-3xl p-5 mb-6 shadow-xl border border-slate-700/50">
+        <div class="bg-[#24283B] rounded-3xl p-5 mb-6 shadow-xl border border-slate-700/50 interactive">
             <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-4">
                 <span class="text-white font-bold">Unidades de Medida</span>
                 <select id="unit-select" class="bg-[#1A1D2D] text-[#38BDF8] border border-[#38BDF8]/30 font-bold rounded-lg px-3 py-2 outline-none">
@@ -293,27 +310,24 @@
     </div>
 
     <!-- ==================== 5. PANTALLA PLANOS 2D ==================== -->
-    <div id="plan-screen" class="screen-layer px-6 pt-16 pb-6 bg-slate-800">
+    <div id="plan-screen" class="screen-layer px-6 pt-16 pb-6 bg-[#1A1D2D]">
         <div class="flex items-center justify-between mb-6">
-            <button class="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-white active:scale-95" onclick="openScreen('home-screen')">
+            <button class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white interactive active:scale-95" onclick="openScreen('home-screen')">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
             <h2 class="text-xl font-black text-white">Blueprint 2D</h2>
-            <button class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white active:scale-95 shadow-lg shadow-blue-500/40" id="btn-export-pdf">
+            <button class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white interactive active:scale-95 shadow-lg shadow-blue-500/40" id="btn-export-pdf">
                 <i class="fa-solid fa-download"></i>
             </button>
         </div>
         
-        <div class="bg-white rounded-2xl w-full flex-grow flex flex-col overflow-hidden shadow-2xl relative">
-            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 z-10">
-                <span class="font-black text-slate-800 tracking-widest text-xs uppercase">Plano General</span>
-                <span class="text-slate-400 text-xs font-bold" id="plan-date"></span>
+        <div class="bg-white rounded-3xl w-full flex-grow flex flex-col overflow-hidden shadow-2xl relative">
+            <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-white z-10">
+                <span class="font-black text-slate-800 tracking-widest text-[10px] uppercase">Measurements Blueprint</span>
+                <span class="text-slate-500 text-[10px] font-bold" id="plan-date"></span>
             </div>
             
-            <!-- Grid Background para Plano -->
-            <div class="w-full h-full absolute top-0 left-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTE5IDE5SDBWMGgxOXYxOXoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2YxZjVmOSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+')] z-0"></div>
-            
-            <canvas id="plan-canvas" class="absolute top-14 left-0 w-full h-[calc(100%-3.5rem)] z-10"></canvas>
+            <canvas id="plan-canvas" class="absolute top-12 left-0 w-full h-[calc(100%-3rem)] z-10"></canvas>
         </div>
     </div>
 
@@ -405,10 +419,31 @@
             renderer.xr.enabled = true;
             container.appendChild(renderer.domElement);
             
+            // Creación limpia y segura del Botón AR Nativo
             const arBtn = ARButton.createButton(renderer, { requiredFeatures: ['hit-test'], domOverlay: { root: document.getElementById('ar-ui-layer') } });
+            
+            // Personalizamos el texto nativo para el usuario
+            const checkARText = setInterval(() => {
+                if(arBtn.textContent === 'START AR') {
+                    arBtn.innerHTML = '<i class="fa-solid fa-camera mr-2"></i> Iniciar Cámara AR';
+                    clearInterval(checkARText);
+                } else if (arBtn.textContent.includes('NOT SUPPORTED') || arBtn.textContent.includes('not supported')) {
+                    arBtn.innerHTML = '<i class="fa-solid fa-ban mr-2"></i> Dispositivo Sin WebXR';
+                    arBtn.disabled = true;
+                    arBtn.style.background = '#94A3B8';
+                    arBtn.style.color = '#fff';
+                    clearInterval(checkARText);
+                }
+            }, 100);
+
+            // Se inserta en el DOM de forma visible y clicable para evadir el bloqueo del navegador
             document.getElementById('ar-button-container').appendChild(arBtn);
             
             arBtn.addEventListener('click', () => {
+                if (arBtn.textContent.includes('Sin WebXR') || arBtn.textContent.includes('NOT SUPPORTED')) {
+                    alert("Tu dispositivo o navegador no soporta AR (WebXR). Usa Chrome en Android o Safari en iOS, y asegúrate de usar HTTPS.");
+                    return;
+                }
                 openScreen('ar-ui-layer');
                 resetARSession();
             });
@@ -416,13 +451,21 @@
             controller = renderer.xr.getController(0);
             scene.add(controller);
 
-            // Sensor Retícula
+            // Sensor Retícula Idéntico a ARPlan 3D
             reticle = new THREE.Group();
-            reticle.add(new THREE.Mesh(new THREE.RingGeometry(0.08, 0.09, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false })));
-            reticle.add(new THREE.Mesh(new THREE.CircleGeometry(0.08, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x3B82F6, opacity: 0.3, transparent: true, depthTest: false })));
+            reticle.add(new THREE.Mesh(new THREE.RingGeometry(0.08, 0.085, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false })));
+            reticle.add(new THREE.Mesh(new THREE.CircleGeometry(0.08, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x3B82F6, opacity: 0.2, transparent: true, depthTest: false })));
+            
+            const crossMat = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.01, gapSize: 0.01, depthTest: false });
+            const lineX = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-0.1, 0, 0), new THREE.Vector3(0.1, 0, 0)]), crossMat);
+            const lineZ = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, -0.1), new THREE.Vector3(0, 0, 0.1)]), crossMat);
+            lineX.computeLineDistances(); lineZ.computeLineDistances();
+            reticle.add(lineX, lineZ);
+
             const dot = new THREE.Mesh(new THREE.CircleGeometry(0.015, 16).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x1E293B, depthTest: false }));
             dot.position.y = 0.001; reticle.add(dot);
-            reticle.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,5,0)]), new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true })));
+            reticle.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,5,0)]), new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.8, transparent: true })));
+            
             reticle.matrixAutoUpdate = false; reticle.visible = false; reticle.renderOrder = 999;
             scene.add(reticle);
 
@@ -430,7 +473,7 @@
             gridHelper.material.opacity = 0.15; gridHelper.material.transparent = true; gridHelper.visible = false;
             scene.add(gridHelper);
 
-            // Botones AR
+            // Botones AR Interactivos
             btnMain.addEventListener('beforexrselect', (ev) => ev.preventDefault());
             btnMain.addEventListener('click', handleToolAction);
             
@@ -451,6 +494,7 @@
             });
         }
 
+        // --- Lógica Interna de Dibujo y Limpieza AR ---
         function resetARSession() {
             arState = 'scanning';
             gridHelper.visible = false;
@@ -460,27 +504,38 @@
             clearCurrentToolAR();
         }
 
-        function clearCurrentToolAR() {
-            currentMeasurePoints = [];
+        function redrawTempMeshes() {
             tempMeshes.forEach(m => scene.remove(m));
             tempMeshes = [];
+            
+            // Dibujar Nodos Blancos
+            currentMeasurePoints.forEach(pos => {
+                const node = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                node.position.copy(pos);
+                scene.add(node);
+                tempMeshes.push(node);
+            });
+
+            // Dibujar línea conectora si es "Camino"
+            if (currentTool === 'path' && currentMeasurePoints.length > 1) {
+                const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(currentMeasurePoints), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 4 }));
+                scene.add(line);
+                tempMeshes.push(line);
+            }
+        }
+
+        function clearCurrentToolAR() {
+            currentMeasurePoints = [];
+            redrawTempMeshes();
             updateStepInstruction();
+            measurePill.style.display = 'none';
+            btnFinishPath.classList.add('hidden');
         }
 
         function undoLastPoint() {
             if(currentMeasurePoints.length > 0) {
                 currentMeasurePoints.pop();
-                const m = tempMeshes.pop(); if(m) scene.remove(m);
-                
-                // Si es camino, debemos borrar también la línea temporal si existe
-                if(currentTool === 'path' && tempMeshes.length > 0) {
-                    const line = tempMeshes.pop(); scene.remove(line); 
-                    // Redibujar la línea con los puntos restantes
-                    if (currentMeasurePoints.length > 1) {
-                        const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(currentMeasurePoints), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 }));
-                        scene.add(l); tempMeshes.push(l);
-                    }
-                }
+                redrawTempMeshes();
                 updateStepInstruction();
             }
         }
@@ -494,18 +549,19 @@
             
             btnMain.classList.remove('hidden');
             btnFinishPath.classList.toggle('hidden', !(currentTool === 'path' && pts >= 2));
+            btnIcon.className = pts === 0 ? "fa-solid fa-crosshairs text-3xl" : "fa-solid fa-plus text-3xl";
 
             const msgMap = {
-                'line': ['Punto inicial', 'Punto final'],
-                'path': [`Punto ${pts+1}`, 'Añadir más o Confirmar (✔)'],
-                'area': ['Esquina 1', 'Esquina opuesta'],
-                'volume': ['Base 1', 'Base opuesta', 'Define la altura'],
-                'circle': ['Centro del círculo', 'Radio exterior'],
-                'angle': ['Línea A', 'Vértice Central', 'Línea B']
+                'line': ['Apunta al primer punto', 'Apunta al segundo punto'],
+                'path': [`Punto ${pts+1}`, 'Añade más o pulsa (✔)'],
+                'area': ['Esquina inicial', 'Esquina opuesta diagonal'],
+                'volume': ['Base: Esquina 1', 'Base: Esquina opuesta', 'Sube la cámara para la altura'],
+                'circle': ['Centro del círculo', 'Apunta al radio exterior'],
+                'angle': ['Punto de línea A', 'Vértice Central', 'Punto de línea B']
             };
             
             const msgs = msgMap[currentTool];
-            instText.innerText = msgs[Math.min(pts, msgs.length-1)] || "Continuar";
+            instText.innerText = msgs[Math.min(pts, msgs.length-1)] || "Continuar...";
         }
 
         function handleToolAction() {
@@ -515,21 +571,8 @@
             const pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
             currentMeasurePoints.push(pos.clone());
 
-            // Esfera de nodo
-            const node = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-            node.position.copy(pos);
-            scene.add(node);
-            tempMeshes.push(node);
+            redrawTempMeshes();
 
-            // Para 'camino', dibujar línea entre nodos acumulados
-            if (currentTool === 'path' && currentMeasurePoints.length > 1) {
-                const geom = new THREE.BufferGeometry().setFromPoints(currentMeasurePoints);
-                const line = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 }));
-                scene.add(line);
-                tempMeshes.push(line);
-            }
-
-            // Comprobar fin automático
             let finished = false;
             const len = currentMeasurePoints.length;
             if (currentTool === 'line' && len === 2) finished = true;
@@ -537,7 +580,6 @@
             if (currentTool === 'volume' && len === 3) finished = true;
             if (currentTool === 'circle' && len === 2) finished = true;
             if (currentTool === 'angle' && len === 3) finished = true;
-            // 'path' termina manualmente con el botón verde.
 
             if (finished) procesarMedicionFinal();
             else updateStepInstruction();
@@ -578,7 +620,7 @@
                 finalMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(box), new THREE.LineBasicMaterial({ color: 0xffffff })));
             }
             else if (currentTool === 'circle') {
-                const r = Math.hypot(pts[1].x-pts[0].x, pts[1].z-pts[0].z); // Radio en XZ
+                const r = Math.hypot(pts[1].x-pts[0].x, pts[1].z-pts[0].z); 
                 data.results = { r, area: Math.PI*r*r, perim: 2*Math.PI*r };
                 const circGeom = new THREE.CircleGeometry(r, 64).rotateX(-Math.PI/2);
                 const mesh = new THREE.Mesh(circGeom, new THREE.MeshBasicMaterial({ color: 0x10B981, opacity: 0.3, transparent: true }));
@@ -598,13 +640,9 @@
             scene.add(finalMesh);
             tempMeasurementData = data;
             
-            // UI Limpieza temporal
-            tempMeshes.forEach(m => scene.remove(m));
-            tempMeshes = []; currentMeasurePoints = [];
-            measurePill.style.display = 'none';
-            btnFinishPath.classList.add('hidden');
+            clearCurrentToolAR();
             
-            // Modal
+            // Abrir Modal de Nombres
             document.getElementById('rename-input').value = '';
             document.getElementById('rename-modal').classList.add('active');
         }
@@ -666,8 +704,8 @@
 
                         // Etiqueta En Vivo (Rubber-band visual)
                         if (currentMeasurePoints.length > 0) {
-                            const p0 = currentMeasurePoints[currentMeasurePoints.length-1]; // Para line y path medimos al ultimo punto
-                            const pFirst = currentMeasurePoints[0]; // Para area/circulo
+                            const p0 = currentMeasurePoints[currentMeasurePoints.length-1]; 
+                            const pFirst = currentMeasurePoints[0]; 
                             let liveVal = "", midPt = curPos.clone();
 
                             if (currentTool === 'line') {
@@ -734,7 +772,7 @@
                             <span class="block font-black text-[#3B82F6] text-sm">${mainRes}</span>
                             <span class="text-[9px] text-slate-400 uppercase font-bold">${p.toolName}</span>
                         </div>
-                        <button class="w-8 h-8 flex items-center justify-center text-rose-300 hover:text-rose-500 transition-colors ml-2 bg-rose-50 rounded-full" onclick="deleteProject(${realIdx})">
+                        <button class="w-8 h-8 flex items-center justify-center text-rose-400 hover:text-rose-600 transition-colors ml-2 bg-rose-50 rounded-full" onclick="deleteProject(${realIdx})">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
                     </div>
@@ -750,6 +788,7 @@
             }
         }
 
+        // Dibujo de Planos Fotorealista (Tipo BluePrint)
         function drawBlueprint() {
             const canvas = document.getElementById('plan-canvas');
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -764,55 +803,66 @@
                 return;
             }
 
-            // Encontrar límites 2D XZ
             let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
             savedProjects.forEach(m => m.points.forEach(p => { minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x); minZ=Math.min(minZ,p.z); maxZ=Math.max(maxZ,p.z); }));
             
-            // Si es solo un punto suelto, dar un margen artificial
             if(maxX === minX) { maxX += 1; minX -= 1; }
             if(maxZ === minZ) { maxZ += 1; minZ -= 1; }
 
-            const margin = 50;
+            const margin = 60;
             const scale = Math.min((canvas.width-margin*2) / (maxX-minX), (canvas.height-margin*2) / (maxZ-minZ));
             const ox = (canvas.width - (maxX-minX)*scale)/2 - minX*scale;
             const oz = (canvas.height - (maxZ-minZ)*scale)/2 - minZ*scale;
 
             savedProjects.forEach((m, idx) => {
-                ctx.lineWidth = 3; ctx.strokeStyle = '#1E293B'; ctx.fillStyle = '#1E293B';
+                ctx.lineWidth = 2; ctx.strokeStyle = '#1E293B'; ctx.fillStyle = '#1E293B';
                 const pts = m.points.map(p => ({ x: ox + p.x*scale, y: oz + p.z*scale }));
                 
-                // Dibujar geometrías
                 if(m.tool === 'line' || m.tool === 'angle' || m.tool === 'path') {
                     ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
                     for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
                     ctx.stroke();
                 } else if(m.tool === 'area' || m.tool === 'volume') {
                     const w = pts[1].x - pts[0].x, h = pts[1].y - pts[0].y;
-                    ctx.fillStyle = m.tool === 'area' ? 'rgba(148, 163, 184, 0.2)' : 'rgba(59, 130, 246, 0.15)';
+                    ctx.fillStyle = m.tool === 'area' ? '#CBD5E1' : '#BFDBFE'; 
                     ctx.fillRect(pts[0].x, pts[0].y, w, h);
                     ctx.strokeRect(pts[0].x, pts[0].y, w, h);
+                    
+                    // Texto Cotas
+                    ctx.fillStyle = '#000'; ctx.font = "11px Arial"; ctx.textAlign = "center";
+                    ctx.fillText(formatValue(Math.abs(m.results.w)), pts[0].x + w/2, pts[0].y - 8);
+                    ctx.save();
+                    ctx.translate(pts[0].x - 8, pts[0].y + h/2);
+                    ctx.rotate(-Math.PI/2);
+                    ctx.fillText(formatValue(Math.abs(m.results.d)), 0, 0);
+                    ctx.restore();
                 } else if(m.tool === 'circle') {
                     const rPix = m.results.r * scale;
                     ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, rPix, 0, Math.PI*2);
-                    ctx.fillStyle = 'rgba(16, 185, 129, 0.15)'; ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = 'transparent'; ctx.fill(); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); ctx.lineTo(pts[0].x + rPix, pts[0].y); ctx.stroke();
+                    ctx.fillStyle = '#000'; ctx.font = "11px Arial"; ctx.textAlign = "center";
+                    ctx.fillText("R="+formatValue(m.results.r), pts[0].x + rPix/2, pts[0].y - 5);
                 }
 
-                // Nodos visuales
-                ctx.fillStyle = '#3B82F6';
-                pts.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2); ctx.fill(); });
+                // Cuadrados negros en nodos
+                ctx.fillStyle = '#000';
+                pts.forEach(pt => { ctx.fillRect(pt.x-4, pt.y-4, 8, 8); });
 
-                // Etiqueta (Nombre Customizado)
-                ctx.fillStyle = '#1E293B'; ctx.font = "bold 13px Nunito"; ctx.textAlign = "center";
-                
-                // Centrar etiqueta según forma
-                let tx = pts[0].x, ty = pts[0].y - 15;
+                // Etiqueta Identificadora Profesional
+                let tx = pts[0].x, ty = pts[0].y - 20;
                 if(m.tool === 'area' || m.tool === 'volume') { tx = (pts[0].x+pts[1].x)/2; ty = (pts[0].y+pts[1].y)/2; }
-                if(m.tool === 'line') { tx = (pts[0].x+pts[1].x)/2; ty = (pts[0].y+pts[1].y)/2 - 10; }
+                if(m.tool === 'line' || m.tool === 'path') { tx = (pts[0].x+pts[1].x)/2; ty = (pts[0].y+pts[1].y)/2 - 10; }
                 
-                // Fondo para texto
-                const textW = ctx.measureText(m.name).width;
-                ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fillRect(tx - textW/2 - 4, ty - 12, textW + 8, 16);
-                ctx.fillStyle = '#3B82F6'; ctx.fillText(m.name, tx, ty);
+                const label = `[${idx+1}]`;
+                ctx.fillStyle = '#fff'; ctx.fillRect(tx - 12, ty - 12, 24, 24);
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(tx - 12, ty - 12, 24, 24);
+                ctx.fillStyle = '#000'; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillText(label, tx, ty);
+                
+                // Nombre asignado debajo de la etiqueta
+                ctx.font = "10px Nunito"; ctx.fillStyle = '#64748B';
+                ctx.fillText(m.name, tx, ty + 22);
             });
         }
 

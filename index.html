@@ -2,41 +2,119 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Arquitecto AR - Web Scanner Pro</title>
+    <!-- Librerías Externas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
-        body { margin: 0; overflow: hidden; font-family: system-ui, sans-serif; background-color: #000; }
-        #ar-container { width: 100vw; height: 100vh; display: block; }
-        #map-canvas { position: absolute; top: 20px; left: 20px; width: 150px; height: 150px; background-color: rgba(255, 255, 255, 0.95); border: 2px solid #2C3E50; border-radius: 8px; z-index: 10; }
-        #ui-panel { position: absolute; bottom: 80px; left: 20px; background: rgba(0, 0, 0, 0.85); color: white; padding: 15px; border-radius: 8px; z-index: 10; width: 220px; }
-        #status-bar { position: absolute; top: 20px; right: 20px; background: rgba(255, 50, 50, 0.9); color: white; padding: 10px; border-radius: 8px; font-weight: bold; display: none; z-index: 10; }
-        h2 { margin: 0 0 5px 0; font-size: 16px; }
-        p { margin: 0 0 5px 0; font-size: 13px; color: #ccc; }
-        #export-btn { margin-top: 10px; padding: 10px; background-color: #33C1FF; border: none; border-radius: 5px; color: black; font-weight: bold; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        body { margin: 0; overflow: hidden; background-color: #0f172a; font-family: 'Segoe UI', system-ui, sans-serif; touch-action: none; }
+        #ar-container { width: 100vw; height: 100vh; display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* Capa de UI por encima del canvas 3D */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 1rem; }
+        
+        /* Reactivar eventos de puntero solo para elementos interactivos */
+        .interactive { pointer-events: auto; }
+
+        /* Estilo del botón AR inyectado por Three.js */
+        #ARButton { bottom: 20px !important; border-radius: 9999px !important; padding: 12px 24px !important; background: rgba(59, 130, 246, 0.9) !important; font-weight: bold !important; border: 2px solid white !important; box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; }
+
+        /* Custom Scrollbar para contenedores ocultos si es necesario */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
     </style>
 </head>
 <body>
-    <div id="status-bar"><i class="fa-solid fa-triangle-exclamation"></i> Tracking Perdido. Mueve el dispositivo lentamente.</div>
-    <canvas id="map-canvas" width="300" height="300"></canvas>
-    <div id="ui-panel">
-        <h2><i class="fa-solid fa-pen-ruler"></i> Scanner Activo</h2>
-        <p id="area-text"><i class="fa-solid fa-chart-area"></i> Área: 0.00 m²</p>
-        <p id="points-text"><i class="fa-solid fa-vector-square"></i> Nodos: 0</p>
-        <button id="export-btn"><i class="fa-solid fa-file-pdf"></i> Exportar CAD/PDF</button>
-    </div>
+
+    <!-- Contenedor AR -->
     <div id="ar-container"></div>
+
+    <!-- Capa de Interfaz de Usuario -->
+    <div id="ui-layer">
+        
+        <!-- Top Bar: Minimapa y Estado -->
+        <div class="flex justify-between items-start w-full">
+            <!-- Minimapa -->
+            <div class="interactive bg-white/90 backdrop-blur-md border-2 border-slate-700 rounded-xl shadow-lg p-1">
+                <canvas id="map-canvas" width="160" height="160" class="rounded-lg bg-slate-50"></canvas>
+            </div>
+
+            <!-- Toast Container (Notificaciones) -->
+            <div id="toast-container" class="flex flex-col gap-2 items-end">
+                <div id="status-bar" class="interactive bg-red-500/90 text-white px-4 py-2 rounded-lg font-bold shadow-md flex items-center gap-2 hidden transition-all duration-300">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Buscando superficie...
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de Control e Información -->
+        <div class="interactive bg-slate-900/80 backdrop-blur-xl text-white p-4 rounded-2xl shadow-2xl border border-slate-700/50 w-full max-w-sm mx-auto mb-16 sm:mb-0 sm:ml-0 sm:mr-auto">
+            
+            <div class="flex items-center gap-2 mb-3 border-b border-slate-700 pb-2">
+                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                    <i class="fa-solid fa-pen-ruler text-sm"></i>
+                </div>
+                <h2 class="text-lg font-bold tracking-wide">Scanner Pro</h2>
+                <span id="badge-status" class="ml-auto text-xs px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full font-semibold border border-blue-500/30">Activo</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                    <p class="text-slate-400 text-xs uppercase font-bold mb-1">Área</p>
+                    <p id="area-text" class="text-xl font-mono text-blue-400">0.00 <span class="text-sm">m²</span></p>
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                    <p class="text-slate-400 text-xs uppercase font-bold mb-1">Perímetro</p>
+                    <p id="perim-text" class="text-xl font-mono text-emerald-400">0.00 <span class="text-sm">m</span></p>
+                </div>
+                <div class="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50 col-span-2 flex justify-between items-center">
+                    <p class="text-slate-400 text-xs uppercase font-bold">Nodos anclados</p>
+                    <p id="points-text" class="text-lg font-mono font-bold text-white">0</p>
+                </div>
+            </div>
+
+            <!-- Controles de Edición -->
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <button id="btn-undo" class="bg-slate-700 hover:bg-slate-600 transition-colors py-2 rounded-lg text-sm font-medium flex flex-col items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-rotate-left"></i> Deshacer
+                </button>
+                <button id="btn-close" class="bg-emerald-600 hover:bg-emerald-500 transition-colors py-2 rounded-lg text-sm font-medium flex flex-col items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-link"></i> Cerrar Forma
+                </button>
+                <button id="btn-reset" class="bg-rose-900/80 hover:bg-rose-800 transition-colors border border-rose-700 py-2 rounded-lg text-sm font-medium flex flex-col items-center justify-center gap-1">
+                    <i class="fa-solid fa-trash-can"></i> Reiniciar
+                </button>
+            </div>
+
+            <!-- Exportar -->
+            <button id="export-btn" class="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-file-pdf text-lg"></i> Exportar Plano (PDF)
+            </button>
+        </div>
+    </div>
 
     <script type="module">
         import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
         import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/ARButton.js';
 
+        // --- Variables Globales ---
         let camera, scene, renderer, controller, reticle;
         let hitTestSource = null, hitTestSourceRequested = false;
-        const floorPlanPoints = []; 
-        const SNAP_TOLERANCE = 0.15; // 15 cm de tolerancia para forzar ángulos rectos (Manhattan-World)
+        
+        let floorPlanPoints = []; 
+        const SNAP_TOLERANCE = 0.15; 
+        
+        // Arrays para gestionar objetos 3D y poder deshacer/limpiar
+        let meshesPoints = [];
+        let meshesLines = [];
+        let polygonMesh = null; // Malla 3D del suelo
+        let isShapeClosed = false;
 
+        // --- Inicialización ---
         init();
         animate();
 
@@ -44,166 +122,463 @@
             const container = document.getElementById('ar-container');
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-            scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1));
+            
+            // Iluminación mejorada
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+            hemiLight.position.set(0, 2, 0);
+            scene.add(hemiLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(1, 5, 1);
+            scene.add(dirLight);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             container.appendChild(renderer.domElement);
+            
+            // Añadir botón AR al body
             document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
 
             controller = renderer.xr.getController(0);
             controller.addEventListener('select', onSelect);
             scene.add(controller);
 
-            reticle = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.1, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
-            reticle.matrixAutoUpdate = false; reticle.visible = false;
+            // Retícula mejorada (puntero)
+            const reticleGeometry = new THREE.RingGeometry(0.04, 0.06, 32).rotateX(-Math.PI / 2);
+            const reticleMaterial = new THREE.MeshBasicMaterial({ color: 0x3b82f6, opacity: 0.8, transparent: true });
+            reticle = new THREE.Mesh(reticleGeometry, reticleMaterial);
+            reticle.matrixAutoUpdate = false; 
+            reticle.visible = false;
+            
+            // Punto central de la retícula
+            const reticleCenter = new THREE.Mesh(new THREE.CircleGeometry(0.01, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+            reticle.add(reticleCenter);
             scene.add(reticle);
+
+            // Event Listeners UI
+            document.getElementById('btn-undo').addEventListener('click', undoLastPoint);
+            document.getElementById('btn-close').addEventListener('click', closeShape);
+            document.getElementById('btn-reset').addEventListener('click', resetScanner);
+            document.getElementById('export-btn').addEventListener('click', generarPDF);
+            
+            window.addEventListener('resize', onWindowResize);
+            updateUIButtons();
         }
 
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- Lógica AR y Dibujo 3D ---
         function onSelect() {
+            if (isShapeClosed) {
+                showToast("La forma está cerrada. Exporta o reinicia.", "info");
+                return;
+            }
+
             if (reticle.visible) {
                 const position = new THREE.Vector3();
                 position.setFromMatrixPosition(reticle.matrix);
 
-                // Lógica de Snapping (Manhattan-World Assumption)
                 let px = position.x;
                 let pz = position.z;
+                let py = position.y; // Altura del suelo detectado
+
                 if (floorPlanPoints.length > 0) {
                     const lastPoint = floorPlanPoints[floorPlanPoints.length - 1];
-                    if (Math.abs(px - lastPoint.x) < SNAP_TOLERANCE) px = lastPoint.x; // Ajuste eje X
-                    if (Math.abs(pz - lastPoint.z) < SNAP_TOLERANCE) pz = lastPoint.z; // Ajuste eje Z
+                    if (Math.abs(px - lastPoint.x) < SNAP_TOLERANCE) px = lastPoint.x; 
+                    if (Math.abs(pz - lastPoint.z) < SNAP_TOLERANCE) pz = lastPoint.z;
                 }
 
-                floorPlanPoints.push({ x: px, z: pz });
+                floorPlanPoints.push({ x: px, y: py, z: pz });
                 
-                const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 16), new THREE.MeshBasicMaterial({ color: 0x33C1FF }));
-                sphere.position.set(px, position.y, pz);
+                // Dibujar Nodo (Esfera)
+                const sphereGeom = new THREE.SphereGeometry(0.02, 16, 16);
+                const sphereMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2, metalness: 0.8 });
+                const sphere = new THREE.Mesh(sphereGeom, sphereMat);
+                sphere.position.set(px, py, pz);
                 scene.add(sphere);
+                meshesPoints.push(sphere);
 
-                // Dibujar líneas entre nodos
+                // Dibujar Línea al nodo anterior
                 if (floorPlanPoints.length > 1) {
                     const lastPoint = floorPlanPoints[floorPlanPoints.length - 2];
-                    const material = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 });
-                    const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(lastPoint.x, position.y, lastPoint.z), new THREE.Vector3(px, position.y, pz)]);
-                    scene.add(new THREE.Line(geometry, material));
+                    drawLine3D(lastPoint.x, py, lastPoint.z, px, py, pz);
                 }
+                
                 updateFloorPlan();
             }
         }
 
+        function drawLine3D(x1, y1, z1, x2, y2, z2) {
+            const material = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 4 });
+            const geometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(x1, y1, z1), 
+                new THREE.Vector3(x2, y2, z2)
+            ]);
+            const line = new THREE.Line(geometry, material);
+            scene.add(line);
+            meshesLines.push(line);
+        }
+
+        // --- Funciones de Edición ---
+        function undoLastPoint() {
+            if (isShapeClosed) return;
+            if (floorPlanPoints.length === 0) return;
+
+            floorPlanPoints.pop();
+            
+            // Eliminar esfera
+            const pMesh = meshesPoints.pop();
+            if (pMesh) scene.remove(pMesh);
+
+            // Eliminar línea
+            if (meshesLines.length > 0) {
+                const lMesh = meshesLines.pop();
+                scene.remove(lMesh);
+            }
+
+            updateFloorPlan();
+        }
+
+        function closeShape() {
+            const n = floorPlanPoints.length;
+            if (n < 3) {
+                showToast("Necesitas al menos 3 puntos para cerrar.", "warning");
+                return;
+            }
+            if (isShapeClosed) return;
+
+            // Dibujar línea desde el último punto al primero
+            const firstP = floorPlanPoints[0];
+            const lastP = floorPlanPoints[n - 1];
+            drawLine3D(lastP.x, lastP.y, lastP.z, firstP.x, firstP.y, firstP.z);
+
+            // Crear geometría 3D del suelo
+            const shape = new THREE.Shape();
+            shape.moveTo(floorPlanPoints[0].x, -floorPlanPoints[0].z); // Invertir Z para Shape 2D
+            for (let i = 1; i < n; i++) {
+                shape.lineTo(floorPlanPoints[i].x, -floorPlanPoints[i].z);
+            }
+
+            const geometry = new THREE.ShapeGeometry(shape);
+            geometry.rotateX(Math.PI / 2); // Rotar para ponerlo horizontal
+            const material = new THREE.MeshBasicMaterial({ color: 0x3b82f6, opacity: 0.3, transparent: true, side: THREE.DoubleSide });
+            polygonMesh = new THREE.Mesh(geometry, material);
+            polygonMesh.position.y = firstP.y + 0.001; // Ligeramente arriba del suelo para evitar Z-fighting
+            scene.add(polygonMesh);
+
+            isShapeClosed = true;
+            updateFloorPlan();
+            
+            document.getElementById('badge-status').textContent = "Completado";
+            document.getElementById('badge-status').className = "ml-auto text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-full font-semibold border border-emerald-500/30";
+            showToast("Plano cerrado correctamente.", "success");
+        }
+
+        function resetScanner() {
+            // Limpiar Arrays y Escena
+            floorPlanPoints = [];
+            meshesPoints.forEach(m => scene.remove(m));
+            meshesLines.forEach(m => scene.remove(m));
+            if (polygonMesh) scene.remove(polygonMesh);
+            
+            meshesPoints = [];
+            meshesLines = [];
+            polygonMesh = null;
+            isShapeClosed = false;
+
+            document.getElementById('badge-status').textContent = "Activo";
+            document.getElementById('badge-status').className = "ml-auto text-xs px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full font-semibold border border-blue-500/30";
+
+            updateFloorPlan();
+            drawCanvasMap();
+            showToast("Escáner reiniciado.", "info");
+        }
+
+        // --- Cálculos y UI ---
         function updateFloorPlan() {
             let area = 0;
+            let perimeter = 0;
             const n = floorPlanPoints.length;
-            if (n >= 3) {
-                // Shoelace Formula
-                let sum1 = 0, sum2 = 0;
-                for (let i = 0; i < n; i++) {
-                    sum1 += floorPlanPoints[i].x * floorPlanPoints[(i + 1) % n].z;
-                    sum2 += floorPlanPoints[i].z * floorPlanPoints[(i + 1) % n].x;
+            
+            if (n > 0) {
+                // Calcular Perímetro
+                for (let i = 1; i < n; i++) {
+                    perimeter += Math.hypot(floorPlanPoints[i].x - floorPlanPoints[i-1].x, floorPlanPoints[i].z - floorPlanPoints[i-1].z);
                 }
-                area = Math.abs(sum1 - sum2) / 2;
+                if (isShapeClosed && n >= 3) {
+                    perimeter += Math.hypot(floorPlanPoints[0].x - floorPlanPoints[n-1].x, floorPlanPoints[0].z - floorPlanPoints[n-1].z);
+                }
+
+                // Calcular Área (Shoelace Formula)
+                if (n >= 3 && isShapeClosed) {
+                    let sum1 = 0, sum2 = 0;
+                    for (let i = 0; i < n; i++) {
+                        sum1 += floorPlanPoints[i].x * floorPlanPoints[(i + 1) % n].z;
+                        sum2 += floorPlanPoints[i].z * floorPlanPoints[(i + 1) % n].x;
+                    }
+                    area = Math.abs(sum1 - sum2) / 2;
+                }
             }
-            document.getElementById('area-text').innerHTML = `<i class="fa-solid fa-chart-area"></i> Área: ${area.toFixed(2)} m²`;
-            document.getElementById('points-text').innerHTML = `<i class="fa-solid fa-vector-square"></i> Nodos: ${n}`;
+
+            document.getElementById('area-text').innerHTML = `${area.toFixed(2)} <span class="text-sm">m²</span>`;
+            document.getElementById('perim-text').innerHTML = `${perimeter.toFixed(2)} <span class="text-sm">m</span>`;
+            document.getElementById('points-text').innerText = n;
+            
+            updateUIButtons();
             drawCanvasMap();
         }
 
-        function drawCanvasMap() {
-            const canvas = document.getElementById('map-canvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (floorPlanPoints.length < 2) return;
-
-            let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
-            floorPlanPoints.forEach(p => { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z); });
-
-            const scale = Math.min(canvas.width / ((maxX - minX) || 1), canvas.height / ((maxZ - minZ) || 1)) * 0.7;
-            const offsetX = (canvas.width - ((maxX - minX) * scale)) / 2;
-            const offsetZ = (canvas.height - ((maxZ - minZ) * scale)) / 2;
-
-            ctx.beginPath();
-            floorPlanPoints.forEach((p, i) => {
-                const cx = offsetX + (p.x - minX) * scale, cz = offsetZ + (p.z - minZ) * scale;
-                i === 0 ? ctx.moveTo(cx, cz) : ctx.lineTo(cx, cz);
-            });
-            ctx.strokeStyle = '#2C3E50'; ctx.lineWidth = 3; ctx.stroke();
-            if (floorPlanPoints.length > 2) { ctx.fillStyle = 'rgba(51, 193, 255, 0.4)'; ctx.fill(); }
+        function updateUIButtons() {
+            const btnUndo = document.getElementById('btn-undo');
+            const btnClose = document.getElementById('btn-close');
+            
+            btnUndo.disabled = floorPlanPoints.length === 0 || isShapeClosed;
+            btnClose.disabled = floorPlanPoints.length < 3 || isShapeClosed;
         }
 
+        // --- Dibujo 2D (Minimapa) ---
+        function drawCanvasMap(targetCanvas = null, isExport = false) {
+            const canvas = targetCanvas || document.getElementById('map-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Limpiar fondo
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (isExport) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            if (floorPlanPoints.length === 0) return;
+
+            // Dibujar Cuadrícula de fondo (Grid)
+            if (isExport) {
+                ctx.strokeStyle = '#f1f5f9';
+                ctx.lineWidth = 1;
+                for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+                for(let i=0; i<canvas.height; i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
+            }
+
+            // Encontrar límites (Bounding Box)
+            let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+            floorPlanPoints.forEach(p => { 
+                minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); 
+                minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z); 
+            });
+
+            // Evitar división por cero si solo hay 1 punto
+            const widthAR = (maxX - minX) || 1;
+            const heightAR = (maxZ - minZ) || 1;
+
+            // Calcular escala (dejar margen del 15%)
+            const margin = isExport ? 0.8 : 0.7;
+            const scale = Math.min(canvas.width / widthAR, canvas.height / heightAR) * margin;
+            
+            // Calcular centro
+            const offsetX = (canvas.width - (widthAR * scale)) / 2;
+            const offsetZ = (canvas.height - (heightAR * scale)) / 2;
+
+            // Función para mapear coords AR a coords Canvas
+            const mapCoord = (p) => ({
+                cx: offsetX + (p.x - minX) * scale,
+                cz: offsetZ + (p.z - minZ) * scale
+            });
+
+            // Dibujar Polígono / Líneas
+            ctx.beginPath();
+            floorPlanPoints.forEach((p, i) => {
+                const {cx, cz} = mapCoord(p);
+                i === 0 ? ctx.moveTo(cx, cz) : ctx.lineTo(cx, cz);
+            });
+            
+            if (isShapeClosed) {
+                ctx.closePath();
+                ctx.fillStyle = isExport ? 'rgba(56, 189, 248, 0.2)' : 'rgba(56, 189, 248, 0.4)';
+                ctx.fill();
+            }
+
+            ctx.strokeStyle = isExport ? '#0f172a' : '#1e293b'; 
+            ctx.lineWidth = isExport ? 4 : 3; 
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Dibujar Nodos (Puntos)
+            floorPlanPoints.forEach(p => {
+                const {cx, cz} = mapCoord(p);
+                ctx.beginPath();
+                ctx.arc(cx, cz, isExport ? 6 : 4, 0, 2 * Math.PI);
+                ctx.fillStyle = '#0ea5e9';
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+        }
+
+        // --- Bucle de Renderizado ---
         function animate() { renderer.setAnimationLoop(render); }
 
         function render(timestamp, frame) {
             const statusBar = document.getElementById('status-bar');
+            
             if (frame) {
                 const referenceSpace = renderer.xr.getReferenceSpace();
                 const session = renderer.xr.getSession();
 
                 if (!hitTestSourceRequested) {
-                    session.requestReferenceSpace('viewer').then(viewerSpace => session.requestHitTestSource({ space: viewerSpace }).then(source => hitTestSource = source));
-                    session.addEventListener('end', () => { hitTestSourceRequested = false; hitTestSource = null; });
+                    session.requestReferenceSpace('viewer').then(viewerSpace => {
+                        session.requestHitTestSource({ space: viewerSpace }).then(source => hitTestSource = source);
+                    });
+                    session.addEventListener('end', () => { 
+                        hitTestSourceRequested = false; hitTestSource = null; 
+                        statusBar.classList.add('hidden'); // Ocultar al salir de AR
+                    });
                     hitTestSourceRequested = true;
                 }
 
-                if (hitTestSource) {
+                if (hitTestSource && !isShapeClosed) {
                     const hitTestResults = frame.getHitTestResults(hitTestSource);
                     if (hitTestResults.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(hitTestResults[0].getPose(referenceSpace).transform.matrix);
-                        statusBar.style.display = 'none'; // Tracking OK
+                        // Superficie encontrada
+                        if(!statusBar.classList.contains('hidden')) {
+                            statusBar.classList.add('opacity-0');
+                            setTimeout(() => statusBar.classList.add('hidden'), 300);
+                        }
                     } else {
                         reticle.visible = false;
-                        statusBar.style.display = 'block'; // Tracking Perdido
+                        // Buscando superficie
+                        statusBar.classList.remove('hidden');
+                        setTimeout(() => statusBar.classList.remove('opacity-0'), 10);
+                        statusBar.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mueve el móvil lentamente...';
                     }
+                } else if (isShapeClosed) {
+                    reticle.visible = false;
+                    statusBar.classList.add('hidden');
                 }
             }
             renderer.render(scene, camera);
         }
         
-        // --- EXPORTACIÓN A PDF (jsPDF) ---
-        document.getElementById('export-btn').addEventListener('click', generarPDF);
+        // --- SISTEMA DE NOTIFICACIONES (Reemplazo de alert) ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-800';
+            let icon = 'fa-info-circle';
+            
+            if(type === 'error') { bgClass = 'bg-rose-600'; icon = 'fa-circle-xmark'; }
+            if(type === 'success') { bgClass = 'bg-emerald-600'; icon = 'fa-circle-check'; }
+            if(type === 'warning') { bgClass = 'bg-amber-500 text-slate-900'; icon = 'fa-triangle-exclamation'; }
 
+            toast.className = `interactive flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg transform transition-all duration-300 translate-x-full opacity-0 font-medium ${bgClass} text-white`;
+            if(type === 'warning') toast.className = toast.className.replace('text-white', '');
+
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Animar entrada
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            });
+
+            // Eliminar después de 3.5 segundos
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // --- EXPORTACIÓN A PDF (jsPDF) ---
         function generarPDF() {
             if (floorPlanPoints.length < 3) {
-                alert("Por favor, escanea al menos 3 paredes (esquinas) para generar un plano válido.");
+                showToast("Dibuja al menos 3 paredes para exportar.", "warning");
                 return;
             }
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            });
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-            // Textos y Metadatos
-            doc.setFontSize(22);
-            doc.setTextColor(44, 62, 80);
-            doc.text("Levantamiento Arquitectónico AR", 20, 25);
+                // Diseño Cabecera
+                doc.setFillColor(15, 23, 42); // slate-900
+                doc.rect(0, 0, 210, 30, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(20);
+                doc.setFont("helvetica", "bold");
+                doc.text("Reporte Técnico - Arquitecto AR", 20, 20);
 
-            doc.setFontSize(12);
-            doc.setTextColor(100, 100, 100);
-            const fecha = new Date().toLocaleString('es-ES');
-            doc.text(`Fecha del escaneo: ${fecha}`, 20, 35);
-            
-            const areaTexto = document.getElementById('area-text').innerText;
-            doc.text(areaTexto, 20, 42);
-            doc.text("Tecnología: WebXR API / Three.js", 20, 49);
+                // Metadatos y Medidas
+                doc.setTextColor(50, 50, 50);
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(10);
+                const fecha = new Date().toLocaleString('es-ES');
+                doc.text(`Fecha del escaneo: ${fecha}`, 20, 40);
+                
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(14);
+                doc.text("Métricas del Espacio", 20, 55);
+                
+                // Cajas de métricas
+                doc.setDrawColor(200, 200, 200);
+                doc.setFillColor(248, 250, 252); // slate-50
+                doc.roundedRect(20, 60, 80, 20, 3, 3, 'FD');
+                doc.roundedRect(110, 60, 80, 20, 3, 3, 'FD');
 
-            // Línea separadora
-            doc.setDrawColor(200, 200, 200);
-            doc.line(20, 55, 190, 55);
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text("Área Total:", 25, 68);
+                doc.text("Perímetro:", 115, 68);
 
-            // Insertar el plano desde el Canvas
-            const canvas = document.getElementById('map-canvas');
-            const imgData = canvas.toDataURL('image/png');
-            
-            // Renderizamos centrado en el documento A4
-            doc.addImage(imgData, 'PNG', 30, 70, 150, 150);
+                doc.setFontSize(14);
+                doc.setTextColor(14, 165, 233); // cyan-500
+                doc.text(`${document.getElementById('area-text').innerText}`, 25, 75);
+                doc.setTextColor(16, 185, 129); // emerald-500
+                doc.text(`${document.getElementById('perim-text').innerText}`, 115, 75);
 
-            // Descargar el archivo
-            doc.save('Plano_Tecnico_AR.pdf');
+                doc.setFontSize(14);
+                doc.setTextColor(50, 50, 50);
+                doc.text("Plano de Planta (Vista Superior)", 20, 95);
+
+                // --- Generar Plano Alta Resolución ---
+                // Crear un canvas temporal de alta resolución para el PDF
+                const hiResCanvas = document.createElement('canvas');
+                hiResCanvas.width = 1000;
+                hiResCanvas.height = 1000;
+                drawCanvasMap(hiResCanvas, true); // true = modo exportación (estilos distintos)
+                
+                const imgData = hiResCanvas.toDataURL('image/png');
+                
+                // Dibujar marco para la imagen
+                doc.setDrawColor(226, 232, 240); // slate-200
+                doc.rect(20, 100, 170, 170, 'S');
+                
+                // Insertar imagen centrada
+                doc.addImage(imgData, 'PNG', 20, 100, 170, 170);
+
+                // Pie de página
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text("Generado automáticamente por Arquitecto AR Web Scanner Pro", 105, 285, { align: 'center' });
+
+                // Descargar
+                doc.save('Plano_Arquitecto_AR.pdf');
+                showToast("PDF Generado exitosamente.", "success");
+                
+            } catch(e) {
+                console.error(e);
+                showToast("Error al generar PDF. Revisa la consola.", "error");
+            }
         }
     </script>
 </body>

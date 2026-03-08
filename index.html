@@ -2,19 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- Meta tags estructurados para Hardware Móvil y PWA -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>AR Meter Pro - Measurement PWA</title>
+    
     <meta name="theme-color" content="#1E1B4B">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
-    
-    <title>AR Meter Pro - Measurement PWA</title>
-    
-    <!-- PWA Manifest Inline -->
     <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%20%22name%22%3A%20%22AR%20Meter%20Pro%22%2C%20%22short_name%22%3A%20%22ARMeter%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%23F4F5F9%22%2C%20%22theme_color%22%3A%20%22%233B82F6%22%20%7D">
 
-    <!-- Librerías Externas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -24,72 +19,22 @@
         
         body { margin: 0; overflow: hidden; background-color: #F0F4F8; font-family: 'Nunito', system-ui, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
         
-        /* Contenedores Principales */
         #ar-container { width: 100vw; height: 100vh; display: block; position: absolute; top: 0; left: 0; z-index: 1; }
-        
         .screen-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; display: none; flex-direction: column; overflow-y: auto; background: #F0F4F8; }
         .screen-layer.active { display: flex; }
         
-        /* ESTRUCTURA DOM OVERLAY: Nunca debe ser display:none para comunicación con el hardware de cámara */
-        #ar-ui-layer { 
-            display: flex !important; 
-            visibility: hidden; 
-            opacity: 0; 
-            transition: opacity 0.2s;
-            z-index: 10; 
-            background: transparent; 
-            pointer-events: none; 
-            padding: env(safe-area-inset-top) 1rem 2rem 1rem; 
-            justify-content: space-between; 
-            overflow: hidden; 
-        }
+        #ar-ui-layer { display: flex !important; visibility: hidden; opacity: 0; transition: opacity 0.2s; z-index: 10; background: transparent; pointer-events: none; padding: env(safe-area-inset-top) 1rem 2rem 1rem; justify-content: space-between; overflow: hidden; }
         #ar-ui-layer.active { visibility: visible; opacity: 1; pointer-events: none; }
         
         .interactive { pointer-events: auto; }
         .ui-control { touch-action: none; }
 
-        /* Estilo Botón AR Nativo (Three.js) - Adaptado para disparar el hardware */
-        #ARButton { 
-            position: relative !important;
-            bottom: auto !important;
-            left: auto !important;
-            transform: none !important;
-            background: transparent !important; 
-            color: white !important; 
-            border-radius: 9999px !important; 
-            padding: 0 !important; 
-            font-size: 1.25rem !important; 
-            font-family: 'Nunito', sans-serif !important;
-            font-weight: 800 !important; 
-            border: none !important; 
-            box-shadow: none !important;
-            width: 100% !important; 
-            height: 100% !important;
-            display: inline-flex !important; 
-            justify-content: center !important; 
-            align-items: center !important;
-            cursor: pointer;
-            z-index: 20;
-        }
+        #ARButton { position: relative !important; bottom: auto !important; left: auto !important; transform: none !important; background: transparent !important; color: white !important; border-radius: 9999px !important; padding: 0 !important; font-size: 1.25rem !important; font-family: 'Nunito', sans-serif !important; font-weight: 800 !important; border: none !important; box-shadow: none !important; width: 100% !important; height: 100% !important; display: inline-flex !important; justify-content: center !important; align-items: center !important; cursor: pointer; z-index: 20; }
 
-        /* Etiqueta Flotante AR (Pill) */
-        .measure-pill {
-            position: absolute; background: rgba(30, 41, 59, 0.95); color: #fff; padding: 8px 16px; border-radius: 9999px;
-            font-weight: 800; font-size: 0.95rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transform: translate(-50%, -100%); pointer-events: none; display: none; white-space: nowrap; z-index: 20;
-            border: 1px solid rgba(255,255,255,0.2); margin-top: -15px; backdrop-filter: blur(4px);
-        }
-        .measure-pill::after {
-            content: ''; position: absolute; bottom: -6px; left: 50%; margin-left: -6px;
-            border-width: 6px 6px 0 6px; border-style: solid; border-color: rgba(30, 41, 59, 0.95) transparent transparent transparent;
-        }
+        .measure-pill { position: absolute; background: #ffffff; color: #1E293B; padding: 8px 18px; border-radius: 9999px; font-weight: 800; font-size: 1rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); transform: translate(-50%, -100%); pointer-events: none; display: none; white-space: nowrap; z-index: 20; border: 1px solid #E2E8F0; margin-top: -15px; }
+        .measure-pill::after { content: ''; position: absolute; bottom: -6px; left: 50%; margin-left: -6px; border-width: 6px 6px 0 6px; border-style: solid; border-color: #ffffff transparent transparent transparent; }
 
-        /* Bottom Sheet de Herramientas */
-        #tools-sheet {
-            position: absolute; bottom: -100%; left: 0; width: 100%; background: #ffffff; border-radius: 30px 30px 0 0;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.1); transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 60;
-            padding: 20px 20px 40px 20px; display: flex; flex-direction: column;
-        }
+        #tools-sheet { position: absolute; bottom: -100%; left: 0; width: 100%; background: #ffffff; border-radius: 30px 30px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 60; padding: 20px 20px 40px 20px; display: flex; flex-direction: column; }
         #tools-sheet.open { bottom: 0; }
         
         .tool-grid-item { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; border-radius: 20px; border: 2px solid transparent; background: #F8FAFC; transition: all 0.2s; cursor: pointer; }
@@ -97,20 +42,20 @@
         .tool-icon-wrapper { width: 50px; height: 50px; border-radius: 15px; background: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #1E293B; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin: 0 auto 10px auto; }
         .tool-grid-item.active .tool-icon-wrapper { color: #3B82F6; }
 
-        /* Animaciones */
         .fade-in { animation: fadeIn 0.3s ease-in forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Modals */
         .modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 100; display: none; align-items: center; justify-content: center; }
         .modal-overlay.active { display: flex; }
+
+        /* Tracking Warning */
+        #tracking-warning { position: absolute; top: env(safe-area-inset-top); left: 0; width: 100%; background: #EF4444; color: white; text-align: center; padding: 10px; font-weight: bold; font-size: 0.85rem; z-index: 90; transform: translateY(-100%); transition: transform 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); pointer-events: none;}
+        #tracking-warning.show { transform: translateY(0); }
     </style>
 </head>
 <body>
 
-    <!-- ==================== 1. PANTALLA INICIO (MENÚ PRINCIPAL) ==================== -->
     <div id="home-screen" class="screen-layer active px-6 pt-16 pb-8 flex flex-col">
-        <!-- Header -->
         <div class="flex justify-between items-center mb-6">
             <div>
                 <h1 class="text-3xl font-black text-[#1E293B] tracking-tight">AR Meter <span class="text-[#3B82F6]">Pro</span></h1>
@@ -121,30 +66,19 @@
             </button>
         </div>
 
-        <!-- Diagnóstico de Hardware -->
-        <div id="hardware-status" class="bg-white rounded-xl p-3 shadow-sm border border-slate-100 flex items-center gap-3 mb-4">
-            <div class="w-3 h-3 rounded-full bg-slate-300 animate-pulse" id="hw-indicator"></div>
-            <span class="text-xs font-bold text-slate-600 uppercase tracking-wide" id="hw-text">Verificando sensores de hardware...</span>
-        </div>
-
-        <!-- Sección Central: Botón Iniciar Cámara -->
-        <div class="flex-grow flex flex-col items-center justify-center w-full mt-2 mb-6">
-            <!-- Gráfico Decorativo -->
+        <div class="flex-grow flex flex-col items-center justify-center w-full mt-4 mb-8">
             <div class="relative w-48 h-48 bg-blue-50 rounded-full flex items-center justify-center mb-8 shadow-[0_0_60px_rgba(59,130,246,0.15)]">
                 <div class="absolute inset-0 border-2 border-blue-200 rounded-full animate-ping opacity-50"></div>
                 <div class="absolute inset-4 border-4 border-blue-100 rounded-full"></div>
                 <i class="fa-solid fa-cube text-6xl text-blue-500 transform -rotate-12"></i>
             </div>
             
-            <!-- Botón AR Contenedor (Wrapper del hardware WebXR) -->
-            <div id="ar-button-wrapper" class="w-full max-w-xs h-16 bg-gradient-to-r from-[#3B82F6] to-[#6366F1] rounded-full shadow-[0_10px_25px_rgba(59,130,246,0.4)] interactive active:scale-95 transition-transform flex items-center justify-center overflow-hidden relative">
-                <!-- Three.js inyectará el botón nativo de acceso a la cámara aquí -->
-                <div id="ar-button-container" class="w-full h-full absolute inset-0"></div>
+            <div id="ar-button-wrapper" class="w-full max-w-xs h-16 bg-gradient-to-r from-[#3B82F6] to-[#6366F1] rounded-full shadow-[0_10px_25px_rgba(59,130,246,0.4)] interactive active:scale-95 transition-transform flex items-center justify-center overflow-hidden">
+                <div id="ar-button-container" class="w-full h-full"></div>
             </div>
             <p class="text-slate-400 text-sm mt-4 font-semibold text-center">Toca para iniciar medición AR</p>
         </div>
 
-        <!-- Opciones Rápidas (Bottom Grid) -->
         <div class="mt-auto">
             <h3 class="text-lg font-bold text-slate-800 mb-3">Gestión de Proyectos</h3>
             <div class="grid grid-cols-2 gap-4">
@@ -171,119 +105,102 @@
         </div>
     </div>
 
-    <!-- ==================== 2. CAPA UI AR (DOM OVERLAY) ==================== -->
+    <div id="ar-unsupported-modal" class="modal-overlay">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-11/12 max-w-sm transform transition-all fade-in interactive text-center">
+            <div class="w-16 h-16 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                <i class="fa-brands fa-apple"></i>
+            </div>
+            <h3 class="text-xl font-black text-slate-800 mb-2">WebXR no detectado</h3>
+            <p class="text-sm text-slate-500 mb-5">Safari en iOS no soporta realidad aumentada nativa por defecto. Para usar la app en iPhone, instala <b>WebXR Viewer</b> de Mozilla o usa un dispositivo Android moderno.</p>
+            <button onclick="document.getElementById('ar-unsupported-modal').classList.remove('active')" class="w-full py-3 bg-slate-100 text-slate-800 font-bold rounded-xl active:bg-slate-200 transition-colors">Entendido</button>
+        </div>
+    </div>
+
     <div id="ar-ui-layer" class="screen-layer">
         
-        <!-- Etiqueta de Medición en Vivo -->
+        <div id="tracking-warning"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Rastreo perdido. Apunta a una superficie con textura.</div>
+        
         <div id="measure-label" class="measure-pill">0.00 m</div>
 
-        <!-- Header AR -->
         <div class="flex justify-between items-start w-full relative z-10 interactive">
-            <!-- Botón Salir -->
             <button id="btn-exit-ar" class="ui-control bg-white/90 backdrop-blur w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-slate-700 text-xl active:scale-90 transition-transform">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
             
-            <!-- Indicador de Herramienta Actual -->
             <button id="btn-top-tool" class="ui-control bg-white/90 backdrop-blur px-5 h-12 rounded-full shadow-lg flex items-center justify-center gap-2 text-slate-800 font-bold text-sm border border-slate-100 active:scale-95 transition-transform">
                 <i id="current-tool-icon" class="fa-solid fa-ruler text-[#3B82F6]"></i>
                 <span id="current-tool-name">Línea</span>
             </button>
 
-            <!-- Botón Deshacer -->
             <button id="btn-undo-ar" class="ui-control bg-white/90 backdrop-blur w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-slate-700 text-lg active:scale-90 transition-transform relative">
                 <i class="fa-solid fa-rotate-left"></i>
                 <span id="point-counter" class="absolute -top-1 -right-1 bg-[#3B82F6] text-white text-[9px] font-bold w-5 h-5 rounded-full flex items-center justify-center hidden">0</span>
             </button>
         </div>
 
-        <!-- Mensaje de Instrucción Flotante -->
         <div class="absolute top-24 left-1/2 transform -translate-x-1/2 w-full px-4 flex justify-center z-10 pointer-events-none">
             <div id="ar-instruction" class="bg-[#1E293B]/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-xl text-center text-sm font-semibold max-w-xs transition-all border border-slate-700/50">
                 Mueve el dispositivo para detectar el piso
             </div>
         </div>
 
-        <!-- Footer AR (Herramientas y Acción) -->
         <div class="w-full flex justify-between items-end mt-auto z-10 interactive pb-4">
-            <!-- Botón Herramientas -->
             <button id="btn-open-tools" class="ui-control bg-white/95 backdrop-blur w-14 h-14 rounded-2xl shadow-xl flex flex-col items-center justify-center text-slate-600 active:scale-95 transition-transform border border-slate-100">
                 <i class="fa-solid fa-toolbox text-xl mb-0.5"></i>
                 <span class="text-[9px] font-bold">Tools</span>
             </button>
 
-            <!-- Acciones Centrales -->
-            <div class="flex gap-2">
-                <!-- Botón Principal (+) -->
-                <button id="btn-main-action" class="ui-control bg-[#3B82F6] text-white w-20 h-20 rounded-full shadow-[0_10px_25px_rgba(59,130,246,0.5)] flex flex-col items-center justify-center active:scale-90 transition-transform hidden border-4 border-white/20">
-                    <i id="btn-action-icon" class="fa-solid fa-plus text-3xl"></i>
+            <div class="flex gap-2 w-full max-w-[200px] justify-center mx-2">
+                <button id="btn-main-action" class="ui-control bg-[#8B5CF6] text-white w-full h-14 rounded-full shadow-[0_10px_25px_rgba(139,92,246,0.4)] flex items-center justify-center active:scale-95 transition-transform hidden border-2 border-white/20 disabled:opacity-50 disabled:scale-100">
+                    <span id="btn-action-text" class="font-bold text-lg tracking-wide">Comienzo</span>
                 </button>
                 
-                <!-- Botón Terminar (Solo para Camino/Polyline) -->
-                <button id="btn-finish-path" class="ui-control bg-emerald-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform hidden self-center">
+                <button id="btn-finish-path" class="ui-control bg-emerald-500 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform hidden shrink-0">
                     <i class="fa-solid fa-check text-xl"></i>
                 </button>
             </div>
 
-            <!-- Botón Borrar Dibujo Actual -->
             <button id="btn-clear-ar" class="ui-control bg-white/95 backdrop-blur w-14 h-14 rounded-2xl shadow-xl flex flex-col items-center justify-center text-rose-500 active:scale-95 transition-transform border border-slate-100">
                 <i class="fa-solid fa-trash-can text-lg mb-0.5"></i>
                 <span class="text-[9px] font-bold">Limpiar</span>
             </button>
         </div>
 
-        <!-- ================= BOTTOM SHEET HERRAMIENTAS ================= -->
         <div id="tools-sheet" class="interactive ui-control">
             <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
             <h3 class="text-xl font-black text-slate-800 mb-4 px-2">Herramientas de Medición</h3>
-            
             <div class="grid grid-cols-3 gap-3 overflow-y-auto max-h-[50vh] px-2 pb-4">
                 <div class="tool-grid-item active" data-tool="line" data-name="Línea" data-icon="fa-ruler">
-                    <div class="tool-icon-wrapper"><i class="fa-solid fa-ruler"></i></div>
-                    <span class="text-xs font-bold text-center text-slate-700">Línea</span>
-                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Distancia simple</span>
+                    <div class="tool-icon-wrapper"><i class="fa-solid fa-ruler"></i></div><span class="text-xs font-bold text-slate-700">Línea</span>
                 </div>
                 <div class="tool-grid-item" data-tool="path" data-name="Camino" data-icon="fa-route">
-                    <div class="tool-icon-wrapper"><i class="fa-solid fa-route"></i></div>
-                    <span class="text-xs font-bold text-center text-slate-700">Camino</span>
-                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Múltiples segmentos</span>
+                    <div class="tool-icon-wrapper"><i class="fa-solid fa-route"></i></div><span class="text-xs font-bold text-slate-700">Camino</span>
                 </div>
                 <div class="tool-grid-item" data-tool="area" data-name="Rectángulo" data-icon="fa-square">
-                    <div class="tool-icon-wrapper"><i class="fa-regular fa-square"></i></div>
-                    <span class="text-xs font-bold text-center text-slate-700">Rectángulo</span>
-                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Área de piso/pared</span>
+                    <div class="tool-icon-wrapper"><i class="fa-regular fa-square"></i></div><span class="text-xs font-bold text-slate-700">Rectángulo</span>
                 </div>
-                <div class="tool-grid-item" data-tool="volume" data-name="Volumen" data-icon="fa-cube">
-                    <div class="tool-icon-wrapper"><i class="fa-solid fa-cube"></i></div>
-                    <span class="text-xs font-bold text-center text-slate-700">Cubo</span>
-                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Base + Altura 3D</span>
+                <div class="tool-grid-item" data-tool="volume" data-name="Cubo" data-icon="fa-cube">
+                    <div class="tool-icon-wrapper"><i class="fa-solid fa-cube"></i></div><span class="text-xs font-bold text-slate-700">Cubo</span>
                 </div>
                 <div class="tool-grid-item" data-tool="circle" data-name="Círculo" data-icon="fa-circle-dot">
-                    <div class="tool-icon-wrapper"><i class="fa-regular fa-circle-dot"></i></div>
-                    <span class="text-xs font-bold text-center text-slate-700">Círculo</span>
-                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Centro y radio</span>
+                    <div class="tool-icon-wrapper"><i class="fa-regular fa-circle-dot"></i></div><span class="text-xs font-bold text-slate-700">Círculo</span>
                 </div>
                 <div class="tool-grid-item" data-tool="angle" data-name="Ángulo" data-icon="fa-angle-left">
-                    <div class="tool-icon-wrapper"><i class="fa-solid fa-angle-left"></i></div>
-                    <span class="text-xs font-bold text-center text-slate-700">Ángulo</span>
-                    <span class="text-[9px] text-center text-slate-400 leading-tight mt-1">Grados en esquinas</span>
+                    <div class="tool-icon-wrapper"><i class="fa-solid fa-angle-left"></i></div><span class="text-xs font-bold text-slate-700">Ángulo</span>
                 </div>
             </div>
             <button id="btn-close-tools" class="mt-4 w-full py-4 bg-slate-100 text-slate-700 font-bold rounded-2xl interactive active:scale-95 transition-transform">Cerrar Menú</button>
         </div>
     </div>
 
-    <!-- ==================== MODAL RENOMBRAR ==================== -->
     <div id="rename-modal" class="modal-overlay">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-11/12 max-w-sm transform transition-all fade-in interactive">
             <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
                 <i class="fa-solid fa-tag"></i>
             </div>
             <h3 class="text-xl font-black text-center text-slate-800 mb-2">Guardar Medición</h3>
-            <p class="text-sm text-center text-slate-500 mb-5">Asigna un nombre a esta zona u objeto para identificarlo en el plano y archivo.</p>
-            
-            <input type="text" id="rename-input" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-bold mb-4 focus:outline-none focus:border-blue-500 text-center" placeholder="Ej. Puerta Principal, Ventana...">
-            
+            <p class="text-sm text-center text-slate-500 mb-5">Asigna un nombre a esta zona u objeto.</p>
+            <input type="text" id="rename-input" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-bold mb-4 focus:outline-none focus:border-blue-500 text-center" placeholder="Ej. Puerta Principal">
             <div class="flex gap-3">
                 <button id="btn-rename-skip" class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl active:bg-slate-200 transition-colors">Omitir</button>
                 <button id="btn-rename-save" class="flex-1 py-3 bg-blue-500 text-white font-bold rounded-xl active:bg-blue-600 shadow-lg shadow-blue-500/30 transition-colors">Guardar</button>
@@ -291,22 +208,28 @@
         </div>
     </div>
 
-    <!-- ==================== 3. PANTALLA ARCHIVO ==================== -->
     <div id="archive-screen" class="screen-layer px-6 pt-16 pb-6">
-        <div class="flex items-center mb-8 gap-4">
-            <button class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-600 interactive active:scale-95" onclick="openScreen('home-screen')">
-                <i class="fa-solid fa-arrow-left"></i>
-            </button>
-            <h2 class="text-2xl font-black text-slate-800">Archivo</h2>
+        <div class="flex items-center justify-between mb-8 gap-4">
+            <div class="flex items-center gap-4">
+                <button class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-600 interactive active:scale-95" onclick="openScreen('home-screen')">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <h2 class="text-2xl font-black text-slate-800">Archivo</h2>
+            </div>
+            <div class="flex gap-2">
+                <label for="import-json" class="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 interactive active:scale-95 cursor-pointer" title="Importar Backup">
+                    <i class="fa-solid fa-file-import"></i>
+                    <input type="file" id="import-json" accept=".json" class="hidden" onchange="importData(event)">
+                </label>
+                <button class="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white interactive active:scale-95" onclick="exportData()" title="Descargar Backup">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                </button>
+            </div>
         </div>
-        
         <p class="text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">Tus Mediciones</p>
-        <div id="archive-list" class="flex flex-col gap-3 pb-20">
-            <!-- Items inyectados por JS -->
-        </div>
+        <div id="archive-list" class="flex flex-col gap-3 pb-20"></div>
     </div>
 
-    <!-- ==================== 4. PANTALLA AJUSTES ==================== -->
     <div id="settings-screen" class="screen-layer px-6 pt-16 pb-6 bg-[#1A1D2D]">
         <div class="flex items-center mb-8 gap-4">
             <button class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white interactive active:scale-95" onclick="openScreen('home-screen')">
@@ -325,39 +248,40 @@
                     <option value="ft">Pies (ft)</option>
                 </select>
             </div>
-            
             <div class="flex flex-col gap-4">
                 <div class="flex justify-between items-center">
                     <span class="text-slate-300 font-semibold text-sm"><i class="fa-solid fa-mobile-screen mr-2 text-slate-500"></i> Vibración Háptica</span>
                     <input type="checkbox" id="toggle-vib" checked class="w-5 h-5 accent-[#38BDF8]">
                 </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-slate-300 font-semibold text-sm"><i class="fa-solid fa-camera mr-2 text-slate-500"></i> Auto Enfoque</span>
-                    <input type="checkbox" checked class="w-5 h-5 accent-[#38BDF8]">
+                <div class="flex justify-between items-center border-t border-slate-700 pt-4">
+                    <span class="text-slate-300 font-semibold text-sm">
+                        <i class="fa-solid fa-magnet mr-2 text-slate-500"></i> Ajuste Magnético (Snap 90°)
+                        <span class="block text-xs text-slate-500 font-normal mt-1 ml-6">Fuerza ortogonalidad en líneas/caminos</span>
+                    </span>
+                    <input type="checkbox" id="toggle-snap" checked class="w-5 h-5 accent-[#38BDF8]">
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ==================== 5. PANTALLA PLANOS 2D ==================== -->
-    <div id="plan-screen" class="screen-layer px-6 pt-16 pb-6 bg-[#1A1D2D]">
-        <div class="flex items-center justify-between mb-6">
+    <div id="plan-screen" class="screen-layer px-4 pt-16 pb-6 bg-[#1A1D2D]">
+        <div class="flex items-center justify-between mb-4">
             <button class="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-white interactive active:scale-95" onclick="openScreen('home-screen')">
                 <i class="fa-solid fa-arrow-left"></i>
             </button>
             <h2 class="text-xl font-black text-white">Blueprint 2D</h2>
-            <button class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white interactive active:scale-95 shadow-lg shadow-blue-500/40" id="btn-export-pdf">
-                <i class="fa-solid fa-download"></i>
-            </button>
+            <div class="flex gap-2">
+                <button class="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-white interactive active:scale-95 shadow-lg" id="btn-export-dxf" title="Exportar CAD (DXF)">
+                    <span class="text-xs font-bold">DXF</span>
+                </button>
+                <button class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white interactive active:scale-95 shadow-lg shadow-blue-500/40" id="btn-export-pdf" title="Exportar PDF">
+                    <i class="fa-solid fa-file-pdf"></i>
+                </button>
+            </div>
         </div>
         
         <div class="bg-white rounded-3xl w-full flex-grow flex flex-col overflow-hidden shadow-2xl relative">
-            <div class="p-4 border-b border-slate-200 flex justify-between items-center bg-white z-10">
-                <span class="font-black text-slate-800 tracking-widest text-[10px] uppercase">Measurements Blueprint</span>
-                <span class="text-slate-500 text-[10px] font-bold" id="plan-date"></span>
-            </div>
-            
-            <canvas id="plan-canvas" class="absolute top-12 left-0 w-full h-[calc(100%-3rem)] z-10"></canvas>
+            <canvas id="plan-canvas" class="w-full h-full z-10 block"></canvas>
         </div>
     </div>
 
@@ -365,32 +289,6 @@
         import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
         import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/ARButton.js';
 
-        // --- Chequeo de Hardware Integrado ---
-        function checkHardware() {
-            const hwInd = document.getElementById('hw-indicator');
-            const hwTxt = document.getElementById('hw-text');
-            
-            if ('xr' in navigator) {
-                navigator.xr.isSessionSupported('immersive-ar').then(supported => {
-                    if(supported) {
-                        hwInd.className = "w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]";
-                        hwTxt.innerText = "Sensor AR Hardware Listo";
-                        hwTxt.className = "text-xs font-bold text-emerald-600 uppercase tracking-wide";
-                    } else {
-                        hwInd.className = "w-3 h-3 rounded-full bg-rose-500";
-                        hwTxt.innerText = "Cámara AR No Compatible";
-                        hwTxt.className = "text-xs font-bold text-rose-600 uppercase tracking-wide";
-                    }
-                });
-            } else {
-                hwInd.className = "w-3 h-3 rounded-full bg-rose-500";
-                hwTxt.innerText = "Requiere navegador con WebXR";
-                hwTxt.className = "text-xs font-bold text-rose-600 uppercase tracking-wide";
-            }
-        }
-        checkHardware();
-
-        // --- Navegación ---
         window.openScreen = function(id) {
             document.querySelectorAll('.screen-layer').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -399,7 +297,6 @@
             if(id === 'home-screen') renderHomeStats();
         }
 
-        // --- Estado Global de la App ---
         let appUnit = 'm'; 
         let currentTool = 'line'; 
         let arState = 'scanning'; 
@@ -410,21 +307,21 @@
         let camera, scene, renderer, controller, reticle;
         let hitTestSource = null, hitTestSourceRequested = false;
         let tempMeshes = [], gridHelper = null;
+        let trackingLostTimer = null; // Para manejar alerta de tracking
 
-        // UI Elements AR
         const instText = document.getElementById('ar-instruction');
         const btnMain = document.getElementById('btn-main-action');
-        const btnIcon = document.getElementById('btn-action-icon');
+        const btnText = document.getElementById('btn-action-text');
         const btnFinishPath = document.getElementById('btn-finish-path');
         const measurePill = document.getElementById('measure-label');
         const ptCounter = document.getElementById('point-counter');
+        const trackingWarning = document.getElementById('tracking-warning');
 
-        // Config Inicial
         renderHomeStats();
         init3D();
         animate();
 
-        // --- Eventos Menú Herramientas ---
+        // Herramientas UI
         const toolsSheet = document.getElementById('tools-sheet');
         document.getElementById('btn-open-tools').addEventListener('click', () => toolsSheet.classList.add('open'));
         document.getElementById('btn-top-tool').addEventListener('click', () => toolsSheet.classList.add('open'));
@@ -445,28 +342,18 @@
             });
         });
 
-        // Eventos Ajustes y Modal
         document.getElementById('unit-select').addEventListener('change', (e) => { appUnit = e.target.value; renderArchive(); });
         
-        document.getElementById('btn-rename-skip').addEventListener('click', () => {
-            saveMeasurementToArchive(tempMeasurementData.toolName);
-            document.getElementById('rename-modal').classList.remove('active');
-        });
-        document.getElementById('btn-rename-save').addEventListener('click', () => {
-            const val = document.getElementById('rename-input').value.trim();
-            saveMeasurementToArchive(val !== '' ? val : tempMeasurementData.toolName);
-            document.getElementById('rename-modal').classList.remove('active');
-        });
+        document.getElementById('btn-rename-skip').addEventListener('click', () => { saveMeasurementToArchive(tempMeasurementData.toolName); document.getElementById('rename-modal').classList.remove('active'); });
+        document.getElementById('btn-rename-save').addEventListener('click', () => { const val = document.getElementById('rename-input').value.trim(); saveMeasurementToArchive(val !== '' ? val : tempMeasurementData.toolName); document.getElementById('rename-modal').classList.remove('active'); });
 
-        // --- Funciones AR (Three.js) ---
         function init3D() {
             const container = document.getElementById('ar-container');
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
             
             scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.8));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            dirLight.position.set(1, 5, 1); scene.add(dirLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(1, 5, 1); scene.add(dirLight);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
@@ -474,170 +361,114 @@
             renderer.xr.enabled = true;
             container.appendChild(renderer.domElement);
             
-            // Creación limpia y segura del Botón AR Nativo
             const arBtn = ARButton.createButton(renderer, { requiredFeatures: ['hit-test'], domOverlay: { root: document.getElementById('ar-ui-layer') } });
             
-            // Personalizamos el texto nativo para el usuario dentro del botón oficial
             const checkARText = setInterval(() => {
                 if(arBtn.textContent === 'START AR') {
                     arBtn.innerHTML = '<i class="fa-solid fa-camera mr-3 text-xl"></i> Iniciar Cámara';
                     clearInterval(checkARText);
                 } else if (arBtn.textContent.includes('NOT SUPPORTED') || arBtn.textContent.includes('not supported')) {
+                    clearInterval(checkARText);
                     arBtn.innerHTML = '<i class="fa-solid fa-ban mr-2"></i> AR No Soportado';
                     arBtn.disabled = true;
                     document.getElementById('ar-button-wrapper').style.background = '#94A3B8';
                     document.getElementById('ar-button-wrapper').style.boxShadow = 'none';
-                    clearInterval(checkARText);
+                    // ADVERTENCIA iOS
+                    document.getElementById('ar-unsupported-modal').classList.add('active');
                 }
             }, 100);
 
-            // Inserción en el contenedor del menú para el clic físico directo
             document.getElementById('ar-button-container').appendChild(arBtn);
             
             arBtn.addEventListener('click', () => {
                 if (arBtn.textContent.includes('No Soportado') || arBtn.textContent.includes('NOT SUPPORTED')) return;
-                
-                // Hacer activa la capa sin usar display block brusco que rompa el WebXR DOM Overlay
                 document.getElementById('ar-ui-layer').classList.add('active');
                 document.getElementById('home-screen').classList.remove('active');
                 resetARSession();
             });
 
-            controller = renderer.xr.getController(0);
-            scene.add(controller);
+            controller = renderer.xr.getController(0); scene.add(controller);
 
-            // Sensor Retícula Idéntico a ARPlan 3D
+            // Retícula Profesional
             reticle = new THREE.Group();
             reticle.add(new THREE.Mesh(new THREE.RingGeometry(0.08, 0.085, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false })));
-            reticle.add(new THREE.Mesh(new THREE.CircleGeometry(0.08, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x3B82F6, opacity: 0.2, transparent: true, depthTest: false })));
-            
             const crossMat = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.01, gapSize: 0.01, depthTest: false });
             const lineX = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-0.1, 0, 0), new THREE.Vector3(0.1, 0, 0)]), crossMat);
             const lineZ = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, -0.1), new THREE.Vector3(0, 0, 0.1)]), crossMat);
-            lineX.computeLineDistances(); lineZ.computeLineDistances();
-            reticle.add(lineX, lineZ);
-
+            lineX.computeLineDistances(); lineZ.computeLineDistances(); reticle.add(lineX, lineZ);
             const dot = new THREE.Mesh(new THREE.CircleGeometry(0.015, 16).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({ color: 0x1E293B, depthTest: false }));
             dot.position.y = 0.001; reticle.add(dot);
             reticle.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,5,0)]), new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.8, transparent: true })));
             
-            reticle.matrixAutoUpdate = false; reticle.visible = false; reticle.renderOrder = 999;
-            scene.add(reticle);
+            reticle.matrixAutoUpdate = false; reticle.visible = false; reticle.renderOrder = 999; scene.add(reticle);
 
-            gridHelper = new THREE.GridHelper(30, 150, 0xffffff, 0xffffff);
-            gridHelper.material.opacity = 0.15; gridHelper.material.transparent = true; gridHelper.visible = false;
-            scene.add(gridHelper);
+            gridHelper = new THREE.GridHelper(20, 100, 0xffffff, 0xffffff);
+            gridHelper.material.opacity = 0.3; gridHelper.material.transparent = true; gridHelper.visible = false; scene.add(gridHelper);
 
-            // Botones AR Interactivos
-            btnMain.addEventListener('beforexrselect', (ev) => ev.preventDefault());
-            btnMain.addEventListener('click', handleToolAction);
-            
-            btnFinishPath.addEventListener('beforexrselect', (ev) => ev.preventDefault());
-            btnFinishPath.addEventListener('click', procesarMedicionFinal);
-            
-            document.getElementById('btn-undo-ar').addEventListener('beforexrselect', (ev) => ev.preventDefault());
-            document.getElementById('btn-undo-ar').addEventListener('click', undoLastPoint);
-            
-            document.getElementById('btn-clear-ar').addEventListener('beforexrselect', (ev) => ev.preventDefault());
-            document.getElementById('btn-clear-ar').addEventListener('click', clearCurrentToolAR);
-            
-            document.getElementById('btn-exit-ar').addEventListener('beforexrselect', (ev) => ev.preventDefault());
-            document.getElementById('btn-exit-ar').addEventListener('click', () => renderer.xr.getSession()?.end());
+            btnMain.addEventListener('beforexrselect', (ev) => ev.preventDefault()); btnMain.addEventListener('click', handleToolAction);
+            btnFinishPath.addEventListener('beforexrselect', (ev) => ev.preventDefault()); btnFinishPath.addEventListener('click', procesarMedicionFinal);
+            document.getElementById('btn-undo-ar').addEventListener('beforexrselect', (ev) => ev.preventDefault()); document.getElementById('btn-undo-ar').addEventListener('click', undoLastPoint);
+            document.getElementById('btn-clear-ar').addEventListener('beforexrselect', (ev) => ev.preventDefault()); document.getElementById('btn-clear-ar').addEventListener('click', clearCurrentToolAR);
+            document.getElementById('btn-exit-ar').addEventListener('beforexrselect', (ev) => ev.preventDefault()); document.getElementById('btn-exit-ar').addEventListener('click', () => renderer.xr.getSession()?.end());
 
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
-            });
+            window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
         }
 
-        // --- Lógica Interna de Dibujo y Limpieza AR ---
         function resetARSession() {
-            arState = 'scanning';
-            gridHelper.visible = false;
-            btnMain.classList.add('hidden');
-            btnFinishPath.classList.add('hidden');
-            instText.innerText = "Mueve el dispositivo mirando al piso";
+            arState = 'scanning'; gridHelper.visible = false; btnMain.classList.add('hidden'); btnFinishPath.classList.add('hidden');
+            instText.innerText = "Apunta la cámara a un piso o pared";
             clearCurrentToolAR();
         }
 
         function redrawTempMeshes() {
-            tempMeshes.forEach(m => scene.remove(m));
-            tempMeshes = [];
-            
-            // Dibujar Nodos Blancos
+            tempMeshes.forEach(m => scene.remove(m)); tempMeshes = [];
             currentMeasurePoints.forEach(pos => {
-                const node = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-                node.position.copy(pos);
-                scene.add(node);
-                tempMeshes.push(node);
+                const node = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff })); node.position.copy(pos); scene.add(node); tempMeshes.push(node);
             });
-
-            // Dibujar línea conectora si es "Camino"
             if (currentTool === 'path' && currentMeasurePoints.length > 1) {
-                const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(currentMeasurePoints), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 4 }));
-                scene.add(line);
-                tempMeshes.push(line);
+                const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(currentMeasurePoints), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 4 })); scene.add(line); tempMeshes.push(line);
             }
         }
 
-        function clearCurrentToolAR() {
-            currentMeasurePoints = [];
-            redrawTempMeshes();
-            updateStepInstruction();
-            measurePill.style.display = 'none';
-            btnFinishPath.classList.add('hidden');
-        }
-
-        function undoLastPoint() {
-            if(currentMeasurePoints.length > 0) {
-                currentMeasurePoints.pop();
-                redrawTempMeshes();
-                updateStepInstruction();
-            }
-        }
+        function clearCurrentToolAR() { currentMeasurePoints = []; redrawTempMeshes(); updateStepInstruction(); measurePill.style.display = 'none'; btnFinishPath.classList.add('hidden'); }
+        function undoLastPoint() { if(currentMeasurePoints.length > 0) { currentMeasurePoints.pop(); redrawTempMeshes(); updateStepInstruction(); } }
 
         function updateStepInstruction() {
-            const pts = currentMeasurePoints.length;
-            ptCounter.innerText = pts;
-            ptCounter.classList.toggle('hidden', pts === 0);
-            
+            const pts = currentMeasurePoints.length; ptCounter.innerText = pts; ptCounter.classList.toggle('hidden', pts === 0);
             if(arState === 'scanning') return;
-            
-            btnMain.classList.remove('hidden');
-            btnFinishPath.classList.toggle('hidden', !(currentTool === 'path' && pts >= 2));
-            btnIcon.className = pts === 0 ? "fa-solid fa-crosshairs text-3xl" : "fa-solid fa-plus text-3xl";
+            btnMain.classList.remove('hidden'); btnFinishPath.classList.toggle('hidden', !(currentTool === 'path' && pts >= 2));
+            btnText.innerText = pts === 0 ? "Comienzo" : "Agregar nodo";
+            const msgMap = { 'line': ['Apunta al primer punto', 'Apunta al segundo punto'], 'path': [`Punto ${pts+1}`, 'Añade más o pulsa (✔)'], 'area': ['Esquina inicial', 'Esquina opuesta diagonal'], 'volume': ['Base: Esquina 1', 'Base: Esquina opuesta', 'Sube la cámara para la altura'], 'circle': ['Centro del círculo', 'Apunta al radio exterior'], 'angle': ['Punto de línea A', 'Vértice Central', 'Punto de línea B'] };
+            const msgs = msgMap[currentTool]; instText.innerText = msgs[Math.min(pts, msgs.length-1)] || "Continuar...";
+        }
 
-            const msgMap = {
-                'line': ['Apunta al primer punto', 'Apunta al segundo punto'],
-                'path': [`Punto ${pts+1}`, 'Añade más o pulsa (✔)'],
-                'area': ['Esquina inicial', 'Esquina opuesta diagonal'],
-                'volume': ['Base: Esquina 1', 'Base: Esquina opuesta', 'Sube la cámara para la altura'],
-                'circle': ['Centro del círculo', 'Apunta al radio exterior'],
-                'angle': ['Punto de línea A', 'Vértice Central', 'Punto de línea B']
-            };
-            
-            const msgs = msgMap[currentTool];
-            instText.innerText = msgs[Math.min(pts, msgs.length-1)] || "Continuar...";
+        function applySnapToGrid(curPos) {
+            if (!document.getElementById('toggle-snap').checked || currentMeasurePoints.length === 0) return curPos;
+            if (currentTool === 'line' || currentTool === 'path' || currentTool === 'area') {
+                const lastPos = currentMeasurePoints[currentMeasurePoints.length - 1];
+                const deltaX = Math.abs(curPos.x - lastPos.x);
+                const deltaZ = Math.abs(curPos.z - lastPos.z);
+                const snapThreshold = 0.15; // 15 cm de umbral magnético para ductos/paredes
+                
+                if (deltaX < snapThreshold && deltaX < deltaZ) curPos.x = lastPos.x;
+                else if (deltaZ < snapThreshold && deltaZ < deltaX) curPos.z = lastPos.z;
+            }
+            return curPos;
         }
 
         function handleToolAction() {
-            if (!reticle.visible) return;
+            if (!reticle.visible || btnMain.disabled) return;
             if (document.getElementById('toggle-vib').checked && navigator.vibrate) navigator.vibrate(40);
 
-            const pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+            let pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+            pos = applySnapToGrid(pos); // Aplicar magnetismo
             currentMeasurePoints.push(pos.clone());
-
             redrawTempMeshes();
 
-            let finished = false;
-            const len = currentMeasurePoints.length;
-            if (currentTool === 'line' && len === 2) finished = true;
-            if (currentTool === 'area' && len === 2) finished = true;
-            if (currentTool === 'volume' && len === 3) finished = true;
-            if (currentTool === 'circle' && len === 2) finished = true;
-            if (currentTool === 'angle' && len === 3) finished = true;
+            let finished = false; const len = currentMeasurePoints.length;
+            if (currentTool === 'line' && len === 2) finished = true; if (currentTool === 'area' && len === 2) finished = true; if (currentTool === 'volume' && len === 3) finished = true; if (currentTool === 'circle' && len === 2) finished = true; if (currentTool === 'angle' && len === 3) finished = true;
 
-            if (finished) procesarMedicionFinal();
-            else updateStepInstruction();
+            if (finished) procesarMedicionFinal(); else updateStepInstruction();
         }
 
         function procesarMedicionFinal() {
@@ -648,294 +479,202 @@
             if (currentTool === 'line') {
                 data.results.d = pts[0].distanceTo(pts[1]);
                 finalMesh.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 5 })));
-            }
-            else if (currentTool === 'path') {
-                let totalD = 0;
-                for(let i=1; i<pts.length; i++) totalD += pts[i].distanceTo(pts[i-1]);
-                data.results.d = totalD;
-                finalMesh.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x38BDF8, linewidth: 5 })));
-            }
-            else if (currentTool === 'area') {
-                const w = Math.abs(pts[1].x - pts[0].x), d = Math.abs(pts[1].z - pts[0].z);
-                data.results = { w, d, area: w*d, perim: (w+d)*2 };
+            } else if (currentTool === 'path') {
+                let totalD = 0; for(let i=1; i<pts.length; i++) totalD += pts[i].distanceTo(pts[i-1]); data.results.d = totalD;
+                finalMesh.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x8B5CF6, linewidth: 5 })));
+            } else if (currentTool === 'area') {
+                const w = Math.abs(pts[1].x - pts[0].x), d = Math.abs(pts[1].z - pts[0].z); data.results = { w, d, area: w*d, perim: (w+d)*2 };
                 const shGeom = new THREE.ShapeGeometry(new THREE.Shape().moveTo(0,0).lineTo(w,0).lineTo(w,d).lineTo(0,d).lineTo(0,0)).rotateX(Math.PI/2);
-                const mat = new THREE.MeshBasicMaterial({ color: 0x3B82F6, opacity: 0.3, transparent: true, side: THREE.DoubleSide, depthWrite: false });
-                const mesh = new THREE.Mesh(shGeom, mat);
-                mesh.position.set(Math.min(pts[0].x, pts[1].x), pts[0].y, Math.min(pts[0].z, pts[1].z));
-                finalMesh.add(mesh);
+                const mat = new THREE.MeshBasicMaterial({ color: 0x8B5CF6, opacity: 0.3, transparent: true, side: THREE.DoubleSide, depthWrite: false });
+                const mesh = new THREE.Mesh(shGeom, mat); mesh.position.set(Math.min(pts[0].x, pts[1].x), pts[0].y, Math.min(pts[0].z, pts[1].z)); finalMesh.add(mesh);
                 finalMesh.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(pts[0].x, pts[0].y, pts[0].z), new THREE.Vector3(pts[1].x, pts[0].y, pts[0].z), new THREE.Vector3(pts[1].x, pts[0].y, pts[1].z), new THREE.Vector3(pts[0].x, pts[0].y, pts[1].z)]), new THREE.LineBasicMaterial({color:0xffffff, linewidth:3})));
-            }
-            else if (currentTool === 'volume') {
+            } else if (currentTool === 'volume') {
                 const w = Math.abs(pts[1].x - pts[0].x), d = Math.abs(pts[1].z - pts[0].z), h = Math.abs(pts[2].y - pts[0].y);
-                data.results = { w, d, h, volume: w*d*h };
-                const box = new THREE.BoxGeometry(w, h, d);
-                const mesh = new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color: 0x6366F1, opacity: 0.25, transparent: true }));
-                mesh.position.set((pts[0].x+pts[1].x)/2, pts[0].y + h/2, (pts[0].z+pts[1].z)/2);
-                finalMesh.add(mesh);
-                finalMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(box), new THREE.LineBasicMaterial({ color: 0xffffff })));
-            }
-            else if (currentTool === 'circle') {
-                const r = Math.hypot(pts[1].x-pts[0].x, pts[1].z-pts[0].z); 
-                data.results = { r, area: Math.PI*r*r, perim: 2*Math.PI*r };
-                const circGeom = new THREE.CircleGeometry(r, 64).rotateX(-Math.PI/2);
-                const mesh = new THREE.Mesh(circGeom, new THREE.MeshBasicMaterial({ color: 0x10B981, opacity: 0.3, transparent: true }));
+                data.results = { w, d, h, area: w*d, perim: (w+d)*2, volume: w*d*h };
+                const box = new THREE.BoxGeometry(w, h, d); const mesh = new THREE.Mesh(box, new THREE.MeshBasicMaterial({ color: 0x6366F1, opacity: 0.25, transparent: true }));
+                mesh.position.set((pts[0].x+pts[1].x)/2, pts[0].y + h/2, (pts[0].z+pts[1].z)/2); finalMesh.add(mesh); finalMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(box), new THREE.LineBasicMaterial({ color: 0xffffff })));
+            } else if (currentTool === 'circle') {
+                const r = Math.hypot(pts[1].x-pts[0].x, pts[1].z-pts[0].z); data.results = { r, area: Math.PI*r*r, perim: 2*Math.PI*r };
+                const circGeom = new THREE.CircleGeometry(r, 64).rotateX(-Math.PI/2); const mesh = new THREE.Mesh(circGeom, new THREE.MeshBasicMaterial({ color: 0x10B981, opacity: 0.3, transparent: true }));
                 mesh.position.set(pts[0].x, pts[0].y, pts[0].z); finalMesh.add(mesh);
-                
-                const edgeGeom = new THREE.BufferGeometry().setFromPoints(new THREE.Path().absarc(0,0,r,0,Math.PI*2).getPoints(64));
-                const edge = new THREE.Line(edgeGeom, new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 }));
+                const edge = new THREE.Line(new THREE.BufferGeometry().setFromPoints(new THREE.Path().absarc(0,0,r,0,Math.PI*2).getPoints(64)), new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 }));
                 edge.rotation.x = -Math.PI/2; edge.position.set(pts[0].x, pts[0].y, pts[0].z); finalMesh.add(edge);
-            }
-            else if (currentTool === 'angle') {
-                const v1 = new THREE.Vector3().subVectors(pts[0], pts[1]).normalize();
-                const v2 = new THREE.Vector3().subVectors(pts[2], pts[1]).normalize();
-                data.results.angle = THREE.MathUtils.radToDeg(v1.angleTo(v2));
+            } else if (currentTool === 'angle') {
+                const v1 = new THREE.Vector3().subVectors(pts[0], pts[1]).normalize(); const v2 = new THREE.Vector3().subVectors(pts[2], pts[1]).normalize(); data.results.angle = THREE.MathUtils.radToDeg(v1.angleTo(v2));
                 finalMesh.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xF59E0B, linewidth: 4 })));
             }
 
-            scene.add(finalMesh);
-            tempMeasurementData = data;
-            
-            clearCurrentToolAR();
-            
-            // Abrir Modal de Nombres
-            document.getElementById('rename-input').value = '';
-            document.getElementById('rename-modal').classList.add('active');
+            scene.add(finalMesh); tempMeasurementData = data; clearCurrentToolAR();
+            document.getElementById('rename-input').value = ''; document.getElementById('rename-modal').classList.add('active');
         }
 
         function saveMeasurementToArchive(customName) {
-            tempMeasurementData.name = customName;
-            savedProjects.push(tempMeasurementData);
-            localStorage.setItem('arqui_projects', JSON.stringify(savedProjects));
-            instText.innerText = `¡Guardado exitosamente!`;
-            setTimeout(updateStepInstruction, 2000);
-            renderHomeStats();
+            tempMeasurementData.name = customName; savedProjects.push(tempMeasurementData); localStorage.setItem('arqui_projects', JSON.stringify(savedProjects));
+            instText.innerText = `¡Guardado exitosamente!`; setTimeout(updateStepInstruction, 2000); renderHomeStats();
         }
 
-        // --- Conversión y UI en Tiempo Real ---
         function formatValue(m, isSq=false, isCb=false) {
-            let val = m, symbol = 'm';
-            if(appUnit === 'cm') { val = m*100; symbol = 'cm'; }
-            if(appUnit === 'ft') { val = m*3.28084; symbol = 'ft'; }
-            if(appUnit === 'in') { val = m*39.3701; symbol = 'in'; }
-            
-            if(isSq) {
-                if(appUnit === 'cm') val = m*10000;
-                else if(appUnit === 'ft') val = m*10.7639;
-                else if(appUnit === 'in') val = m*1550;
-                symbol += '²';
-            }
-            if(isCb) {
-                if(appUnit === 'cm') val = m*1000000;
-                else if(appUnit === 'ft') val = m*35.3147;
-                else if(appUnit === 'in') val = m*61023.7;
-                symbol += '³';
-            }
+            let val = m, symbol = 'm'; if(appUnit === 'cm') { val = m*100; symbol = 'cm'; } if(appUnit === 'ft') { val = m*3.28084; symbol = 'ft'; } if(appUnit === 'in') { val = m*39.3701; symbol = 'in'; }
+            if(isSq) { if(appUnit === 'cm') val = m*10000; else if(appUnit === 'ft') val = m*10.7639; else if(appUnit === 'in') val = m*1550; symbol += '²'; }
+            if(isCb) { if(appUnit === 'cm') val = m*1000000; else if(appUnit === 'ft') val = m*35.3147; else if(appUnit === 'in') val = m*61023.7; symbol += '³'; }
             return `${val.toFixed(2)} ${symbol}`;
         }
 
         function render(t, frame) {
             if (frame) {
-                const session = renderer.xr.getSession();
-                const refSpace = renderer.xr.getReferenceSpace();
-
-                if (!hitTestSourceRequested) {
-                    session.requestReferenceSpace('viewer').then(vs => session.requestHitTestSource({ space: vs }).then(s => hitTestSource = s));
-                    session.addEventListener('end', () => { 
-                        hitTestSourceRequested = false; 
-                        hitTestSource = null; 
-                        document.getElementById('ar-ui-layer').classList.remove('active');
-                        openScreen('home-screen'); 
-                    });
-                    hitTestSourceRequested = true;
-                }
+                const session = renderer.xr.getSession(); const refSpace = renderer.xr.getReferenceSpace();
+                if (!hitTestSourceRequested) { session.requestReferenceSpace('viewer').then(vs => session.requestHitTestSource({ space: vs }).then(s => hitTestSource = s)); session.addEventListener('end', () => { hitTestSourceRequested = false; hitTestSource = null; document.getElementById('ar-ui-layer').classList.remove('active'); openScreen('home-screen'); }); hitTestSourceRequested = true; }
 
                 if (hitTestSource) {
                     const hits = frame.getHitTestResults(hitTestSource);
                     if (hits.length > 0) {
-                        reticle.visible = true;
-                        reticle.matrix.fromArray(hits[0].getPose(refSpace).transform.matrix);
-                        const curPos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+                        // MANEJO RASTREO EXITOSO
+                        trackingWarning.classList.remove('show'); btnMain.disabled = false;
+                        reticle.visible = true; reticle.matrix.fromArray(hits[0].getPose(refSpace).transform.matrix);
+                        let curPos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+                        
+                        // SNAP EN TIEMPO REAL
+                        curPos = applySnapToGrid(curPos);
+                        reticle.position.copy(curPos);
 
-                        if (arState === 'scanning') {
-                            arState = 'ready';
-                            gridHelper.position.y = curPos.y; gridHelper.visible = true;
-                            updateStepInstruction();
-                        }
+                        if (arState === 'scanning') { arState = 'ready'; gridHelper.position.y = curPos.y; gridHelper.visible = true; updateStepInstruction(); }
 
-                        // Etiqueta En Vivo (Rubber-band visual)
                         if (currentMeasurePoints.length > 0) {
-                            const p0 = currentMeasurePoints[currentMeasurePoints.length-1]; 
-                            const pFirst = currentMeasurePoints[0]; 
-                            let liveVal = "", midPt = curPos.clone();
-
-                            if (currentTool === 'line') {
-                                liveVal = formatValue(p0.distanceTo(curPos)); midPt.lerp(p0, 0.5);
-                            } else if (currentTool === 'path') {
-                                liveVal = formatValue(p0.distanceTo(curPos)); midPt.lerp(p0, 0.5);
-                            } else if (currentTool === 'circle') {
-                                liveVal = `R: ${formatValue(Math.hypot(curPos.x-pFirst.x, curPos.z-pFirst.z))}`; midPt.lerp(pFirst, 0.5);
-                            } else if (currentTool === 'area') {
-                                const w = Math.abs(curPos.x - pFirst.x), d = Math.abs(curPos.z - pFirst.z);
-                                liveVal = formatValue(w*d, true); midPt.set((pFirst.x+curPos.x)/2, pFirst.y, (pFirst.z+curPos.z)/2);
-                            } else if (currentTool === 'volume' && currentMeasurePoints.length === 2) {
-                                liveVal = `H: ${formatValue(Math.abs(curPos.y - pFirst.y))}`; 
-                                midPt.set(curPos.x, (pFirst.y+curPos.y)/2, curPos.z);
-                            } else if (currentTool === 'angle' && currentMeasurePoints.length === 2) {
-                                const v1 = new THREE.Vector3().subVectors(pFirst, currentMeasurePoints[1]).normalize();
-                                const v2 = new THREE.Vector3().subVectors(curPos, currentMeasurePoints[1]).normalize();
-                                liveVal = `${THREE.MathUtils.radToDeg(v1.angleTo(v2)).toFixed(1)}°`;
-                            }
+                            const p0 = currentMeasurePoints[currentMeasurePoints.length-1]; const pFirst = currentMeasurePoints[0]; let liveVal = "", midPt = curPos.clone();
+                            if (currentTool === 'line' || currentTool === 'path') { liveVal = formatValue(p0.distanceTo(curPos)); midPt.lerp(p0, 0.5); } else if (currentTool === 'circle') { liveVal = `R: ${formatValue(Math.hypot(curPos.x-pFirst.x, curPos.z-pFirst.z))}`; midPt.lerp(pFirst, 0.5); } else if (currentTool === 'area') { const w = Math.abs(curPos.x - pFirst.x), d = Math.abs(curPos.z - pFirst.z); liveVal = formatValue(w*d, true); midPt.set((pFirst.x+curPos.x)/2, pFirst.y, (pFirst.z+curPos.z)/2); } else if (currentTool === 'volume' && currentMeasurePoints.length === 2) { liveVal = `H: ${formatValue(Math.abs(curPos.y - pFirst.y))}`; midPt.set(curPos.x, (pFirst.y+curPos.y)/2, curPos.z); } else if (currentTool === 'angle' && currentMeasurePoints.length === 2) { const v1 = new THREE.Vector3().subVectors(pFirst, currentMeasurePoints[1]).normalize(); const v2 = new THREE.Vector3().subVectors(curPos, currentMeasurePoints[1]).normalize(); liveVal = `${THREE.MathUtils.radToDeg(v1.angleTo(v2)).toFixed(1)}°`; }
 
                             const screenPos = midPt.project(camera);
-                            if (screenPos.z < 1 && liveVal !== "") {
-                                measurePill.innerText = liveVal; measurePill.style.display = 'block';
-                                measurePill.style.left = `${(screenPos.x*.5+.5)*window.innerWidth}px`;
-                                measurePill.style.top = `${(screenPos.y*-.5+.5)*window.innerHeight}px`;
-                            } else measurePill.style.display = 'none';
+                            if (screenPos.z < 1 && liveVal !== "") { measurePill.innerText = liveVal; measurePill.style.display = 'block'; measurePill.style.left = `${(screenPos.x*.5+.5)*window.innerWidth}px`; measurePill.style.top = `${(screenPos.y*-.5+.5)*window.innerHeight}px`; } else measurePill.style.display = 'none';
                         } else measurePill.style.display = 'none';
-                    } else { reticle.visible = false; measurePill.style.display = 'none'; }
+                    } else { 
+                        // MANEJO PÉRDIDA DE RASTREO
+                        reticle.visible = false; measurePill.style.display = 'none'; 
+                        if(arState === 'ready') {
+                            trackingWarning.classList.add('show');
+                            btnMain.disabled = true; // Evitar poner puntos erróneos
+                        }
+                    }
                 }
             }
             renderer.render(scene, camera);
         }
         function animate() { renderer.setAnimationLoop(render); }
 
-        // --- Pantallas Secundarias (Archivo, Planos, Ajustes) ---
         function renderHomeStats() { document.getElementById('home-archive-count').innerText = `${savedProjects.length} proyectos`; }
 
         function renderArchive() {
-            const list = document.getElementById('archive-list');
-            list.innerHTML = savedProjects.length === 0 ? '<p class="text-center text-slate-400 mt-10">No hay mediciones guardadas.</p>' : '';
-            
+            const list = document.getElementById('archive-list'); list.innerHTML = savedProjects.length === 0 ? '<p class="text-center text-slate-400 mt-10">No hay mediciones guardadas.</p>' : '';
             savedProjects.slice().reverse().forEach((p, idx) => {
                 const dateStr = new Date(p.date).toLocaleDateString('es-ES', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-                let mainRes = "";
-                if(p.tool === 'line' || p.tool === 'path') mainRes = `L = ${formatValue(p.results.d)}`;
-                if(p.tool === 'area') mainRes = `S = ${formatValue(p.results.area, true)}`;
-                if(p.tool === 'volume') mainRes = `V = ${formatValue(p.results.volume, false, true)}`;
-                if(p.tool === 'circle') mainRes = `A = ${formatValue(p.results.area, true)}`;
-                if(p.tool === 'angle') mainRes = `A = ${p.results.angle.toFixed(1)}°`;
-
+                let mainRes = ""; if(p.tool === 'line' || p.tool === 'path') mainRes = `L = ${formatValue(p.results.d)}`; if(p.tool === 'area') mainRes = `S = ${formatValue(p.results.area, true)}`; if(p.tool === 'volume') mainRes = `V = ${formatValue(p.results.volume, false, true)}`; if(p.tool === 'circle') mainRes = `A = ${formatValue(p.results.area, true)}`; if(p.tool === 'angle') mainRes = `A = ${p.results.angle.toFixed(1)}°`;
                 const icons = { 'line':'fa-ruler', 'path':'fa-route', 'area':'fa-square', 'volume':'fa-cube', 'circle':'fa-circle-dot', 'angle':'fa-angle-left' };
                 const realIdx = savedProjects.length - 1 - idx;
-                
                 list.innerHTML += `
                     <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center gap-4">
-                        <div class="w-12 h-12 bg-blue-50 text-[#3B82F6] rounded-xl flex items-center justify-center text-xl shrink-0">
-                            <i class="fa-solid ${icons[p.tool] || 'fa-ruler'}"></i>
-                        </div>
-                        <div class="flex-grow">
-                            <h4 class="font-bold text-slate-800 text-sm">${p.name}</h4>
-                            <p class="text-[11px] text-slate-400 font-medium">${dateStr}</p>
-                        </div>
-                        <div class="text-right">
-                            <span class="block font-black text-[#3B82F6] text-sm">${mainRes}</span>
-                            <span class="text-[9px] text-slate-400 uppercase font-bold">${p.toolName}</span>
-                        </div>
-                        <button class="w-8 h-8 flex items-center justify-center text-rose-400 hover:text-rose-600 transition-colors ml-2 bg-rose-50 rounded-full" onclick="deleteProject(${realIdx})">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </div>
-                `;
+                        <div class="w-12 h-12 bg-blue-50 text-[#3B82F6] rounded-xl flex items-center justify-center text-xl shrink-0"><i class="fa-solid ${icons[p.tool] || 'fa-ruler'}"></i></div>
+                        <div class="flex-grow"><h4 class="font-bold text-slate-800 text-sm">${p.name}</h4><p class="text-[11px] text-slate-400 font-medium">${dateStr}</p></div>
+                        <div class="text-right"><span class="block font-black text-[#3B82F6] text-sm">${mainRes}</span><span class="text-[9px] text-slate-400 uppercase font-bold">${p.toolName}</span></div>
+                        <button class="w-8 h-8 flex items-center justify-center text-rose-400 hover:text-rose-600 transition-colors ml-2 bg-rose-50 rounded-full" onclick="deleteProject(${realIdx})"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
             });
         }
 
-        window.deleteProject = function(realIdx) {
-            if(confirm("¿Eliminar esta medición del archivo?")) {
-                savedProjects.splice(realIdx, 1);
-                localStorage.setItem('arqui_projects', JSON.stringify(savedProjects));
-                renderArchive();
-            }
+        window.deleteProject = function(realIdx) { if(confirm("¿Eliminar esta medición?")) { savedProjects.splice(realIdx, 1); localStorage.setItem('arqui_projects', JSON.stringify(savedProjects)); renderArchive(); } }
+
+        // --- SISTEMA DE BACKUP JSON ---
+        window.exportData = function() {
+            if(savedProjects.length === 0) return alert("El archivo está vacío.");
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(savedProjects));
+            const dlAnchorElem = document.createElement('a'); dlAnchorElem.setAttribute("href", dataStr); dlAnchorElem.setAttribute("download", `ARMeter_Backup_${new Date().toISOString().split('T')[0]}.json`); dlAnchorElem.click();
+        }
+        
+        window.importData = function(event) {
+            const file = event.target.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if(Array.isArray(imported)) { savedProjects = imported; localStorage.setItem('arqui_projects', JSON.stringify(savedProjects)); renderArchive(); alert("Backup restaurado correctamente."); } else throw new Error();
+                } catch(err) { alert("Archivo JSON inválido."); }
+            }; reader.readAsText(file);
         }
 
-        // Dibujo de Planos Fotorealista (Tipo BluePrint)
         function drawBlueprint() {
-            const canvas = document.getElementById('plan-canvas');
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width; canvas.height = rect.height;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0,0, canvas.width, canvas.height);
-            document.getElementById('plan-date').innerText = new Date().toLocaleDateString('es-ES').replace(/\//g, '.');
+            const canvas = document.getElementById('plan-canvas'); const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width; canvas.height = rect.height; const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if (savedProjects.length === 0) { ctx.fillStyle = "#94a3b8"; ctx.font = "14px Nunito"; ctx.textAlign = "center"; ctx.fillText("Realiza mediciones en AR para generar el plano.", canvas.width/2, canvas.height/2); return; }
 
-            if (savedProjects.length === 0) {
-                ctx.fillStyle = "#94a3b8"; ctx.font = "14px Nunito"; ctx.textAlign = "center";
-                ctx.fillText("Realiza mediciones en AR para generar el plano.", canvas.width/2, canvas.height/2);
-                return;
-            }
-
+            const drawingHeight = canvas.height - 150;
             let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
             savedProjects.forEach(m => m.points.forEach(p => { minX=Math.min(minX,p.x); maxX=Math.max(maxX,p.x); minZ=Math.min(minZ,p.z); maxZ=Math.max(maxZ,p.z); }));
-            
-            if(maxX === minX) { maxX += 1; minX -= 1; }
-            if(maxZ === minZ) { maxZ += 1; minZ -= 1; }
-
-            const margin = 60;
-            const scale = Math.min((canvas.width-margin*2) / (maxX-minX), (canvas.height-margin*2) / (maxZ-minZ));
-            const ox = (canvas.width - (maxX-minX)*scale)/2 - minX*scale;
-            const oz = (canvas.height - (maxZ-minZ)*scale)/2 - minZ*scale;
+            if(maxX === minX) { maxX += 1; minX -= 1; } if(maxZ === minZ) { maxZ += 1; minZ -= 1; }
+            const margin = 40; const scale = Math.min((canvas.width-margin*2) / (maxX-minX), (drawingHeight-margin*2) / (maxZ-minZ));
+            const ox = (canvas.width - (maxX-minX)*scale)/2 - minX*scale; const oz = (drawingHeight - (maxZ-minZ)*scale)/2 - minZ*scale;
 
             savedProjects.forEach((m, idx) => {
-                ctx.lineWidth = 2; ctx.strokeStyle = '#1E293B'; ctx.fillStyle = '#1E293B';
+                ctx.lineWidth = 1.5; ctx.strokeStyle = '#000000';
                 const pts = m.points.map(p => ({ x: ox + p.x*scale, y: oz + p.z*scale }));
                 
                 if(m.tool === 'line' || m.tool === 'angle' || m.tool === 'path') {
-                    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
-                    for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                    ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); for(let i=1; i<pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y); ctx.stroke();
                 } else if(m.tool === 'area' || m.tool === 'volume') {
-                    const w = pts[1].x - pts[0].x, h = pts[1].y - pts[0].y;
-                    ctx.fillStyle = m.tool === 'area' ? '#CBD5E1' : '#BFDBFE'; 
-                    ctx.fillRect(pts[0].x, pts[0].y, w, h);
-                    ctx.strokeRect(pts[0].x, pts[0].y, w, h);
-                    
-                    // Texto Cotas
-                    ctx.fillStyle = '#000'; ctx.font = "11px Arial"; ctx.textAlign = "center";
-                    ctx.fillText(formatValue(Math.abs(m.results.w)), pts[0].x + w/2, pts[0].y - 8);
-                    ctx.save();
-                    ctx.translate(pts[0].x - 8, pts[0].y + h/2);
-                    ctx.rotate(-Math.PI/2);
-                    ctx.fillText(formatValue(Math.abs(m.results.d)), 0, 0);
-                    ctx.restore();
+                    const w = pts[1].x - pts[0].x, h = pts[1].y - pts[0].y; ctx.fillStyle = '#C0C0C0'; ctx.fillRect(pts[0].x, pts[0].y, w, h); ctx.strokeRect(pts[0].x, pts[0].y, w, h);
+                    ctx.fillStyle = '#000'; ctx.font = "12px Arial"; ctx.textAlign = "center"; ctx.fillText(formatValue(Math.abs(m.results.w)), pts[0].x + w/2, pts[0].y - 8);
+                    ctx.save(); ctx.translate(pts[0].x - 8, pts[0].y + h/2); ctx.rotate(-Math.PI/2); ctx.fillText(formatValue(Math.abs(m.results.d)), 0, 0); ctx.restore();
                 } else if(m.tool === 'circle') {
-                    const rPix = m.results.r * scale;
-                    ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, rPix, 0, Math.PI*2);
-                    ctx.fillStyle = 'transparent'; ctx.fill(); ctx.stroke();
+                    const rPix = m.results.r * scale; ctx.beginPath(); ctx.arc(pts[0].x, pts[0].y, rPix, 0, Math.PI*2); ctx.fillStyle = 'transparent'; ctx.fill(); ctx.stroke();
                     ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y); ctx.lineTo(pts[0].x + rPix, pts[0].y); ctx.stroke();
-                    ctx.fillStyle = '#000'; ctx.font = "11px Arial"; ctx.textAlign = "center";
-                    ctx.fillText("R="+formatValue(m.results.r), pts[0].x + rPix/2, pts[0].y - 5);
+                    ctx.fillStyle = '#000'; ctx.font = "12px Arial"; ctx.textAlign = "center"; ctx.fillText("R="+formatValue(m.results.r), pts[0].x + rPix/2, pts[0].y - 5);
                 }
 
-                // Cuadrados negros en nodos
-                ctx.fillStyle = '#000';
-                pts.forEach(pt => { ctx.fillRect(pt.x-4, pt.y-4, 8, 8); });
+                pts.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke(); });
+                let tx = pts[0].x, ty = pts[0].y - 20; if(m.tool === 'area' || m.tool === 'volume') { tx = Math.max(pts[0].x, pts[1].x) + 15; ty = Math.min(pts[0].y, pts[1].y) + 15; } if(m.tool === 'circle') { tx = pts[0].x + m.results.r * scale + 15; ty = pts[0].y - 15; }
+                const label = `[${idx+1}]`; ctx.fillStyle = '#fff'; ctx.fillRect(tx - 12, ty - 10, 24, 20); ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(tx - 12, ty - 10, 24, 20); ctx.fillStyle = '#000'; ctx.font = "11px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(idx+1, tx, ty);
+            });
 
-                // Etiqueta Identificadora Profesional
-                let tx = pts[0].x, ty = pts[0].y - 20;
-                if(m.tool === 'area' || m.tool === 'volume') { tx = (pts[0].x+pts[1].x)/2; ty = (pts[0].y+pts[1].y)/2; }
-                if(m.tool === 'line' || m.tool === 'path') { tx = (pts[0].x+pts[1].x)/2; ty = (pts[0].y+pts[1].y)/2 - 10; }
-                
-                const label = `[${idx+1}]`;
-                ctx.fillStyle = '#fff'; ctx.fillRect(tx - 12, ty - 12, 24, 24);
-                ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(tx - 12, ty - 12, 24, 24);
-                ctx.fillStyle = '#000'; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                ctx.fillText(label, tx, ty);
-                
-                // Nombre asignado debajo de la etiqueta
-                ctx.font = "10px Nunito"; ctx.fillStyle = '#64748B';
-                ctx.fillText(m.name, tx, ty + 22);
+            const legendY = drawingHeight + 20; ctx.beginPath(); ctx.moveTo(20, legendY); ctx.lineTo(canvas.width - 20, legendY); ctx.strokeStyle = '#ccc'; ctx.stroke();
+            ctx.fillStyle = '#000'; ctx.font = "12px Arial"; ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText("Measurements Blueprint", 20, legendY + 10); ctx.textAlign = "right"; ctx.fillText(new Date().toLocaleDateString('es-ES').replace(/\//g, '.'), canvas.width - 20, legendY + 10);
+            ctx.beginPath(); ctx.moveTo(20, legendY + 30); ctx.lineTo(canvas.width - 20, legendY + 30); ctx.stroke();
+
+            ctx.textAlign = "left"; let colX = 20, rowY = legendY + 40;
+            savedProjects.forEach((m, idx) => {
+                if(colX > canvas.width - 80) { colX = 20; rowY += 60; }
+                ctx.font = "bold 10px Arial"; ctx.fillText(`[${idx+1}] ${m.toolName.toLowerCase()}`, colX, rowY); ctx.font = "9px Arial";
+                let textY = rowY + 12;
+                if(m.results.area) { ctx.fillText(`S=${formatValue(m.results.area, true)}`, colX, textY); textY += 10; } if(m.results.perim) { ctx.fillText(`P=${formatValue(m.results.perim)}`, colX, textY); textY += 10; } if(m.results.volume) { ctx.fillText(`V=${formatValue(m.results.volume, false, true)}`, colX, textY); textY += 10; } if(m.results.h) { ctx.fillText(`H=${formatValue(m.results.h)}`, colX, textY); textY += 10; } if(m.results.d && !m.results.area) { ctx.fillText(`L=${formatValue(m.results.d)}`, colX, textY); }
+                colX += 100;
             });
         }
 
-        document.getElementById('btn-export-pdf').addEventListener('click', () => {
-            if(savedProjects.length === 0) return alert("No hay datos para exportar");
-            const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            
-            doc.setFillColor(30, 41, 59); doc.rect(0,0,210,35,'F');
-            doc.setTextColor(255,255,255); doc.setFontSize(22); doc.text("Plano AR Meter Pro", 20, 23);
-            
-            doc.addImage(document.getElementById('plan-canvas').toDataURL('image/png'), 'PNG', 15, 45, 180, 180);
-            doc.save('AR_Blueprint.pdf');
+        document.getElementById('btn-export-pdf').addEventListener('click', () => { if(savedProjects.length === 0) return alert("No hay datos para exportar"); const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' }); doc.addImage(document.getElementById('plan-canvas').toDataURL('image/png'), 'PNG', 10, 10, 190, 0); doc.save('AR_Blueprint.pdf'); });
+
+        // --- SISTEMA DE EXPORTACIÓN DXF PARA AUTOCAD ---
+        document.getElementById('btn-export-dxf').addEventListener('click', () => {
+            if(savedProjects.length === 0) return alert("No hay datos para exportar a CAD.");
+            let dxf = "0\nSECTION\n2\nENTITIES\n";
+            savedProjects.forEach(m => {
+                const pts = m.points;
+                if(m.tool === 'line' || m.tool === 'path' || m.tool === 'angle') {
+                    for(let i=1; i<pts.length; i++) {
+                        dxf += `0\nLINE\n8\nMeasurements\n10\n${pts[i-1].x}\n20\n${-pts[i-1].z}\n11\n${pts[i].x}\n21\n${-pts[i].z}\n`;
+                    }
+                } else if(m.tool === 'area' || m.tool === 'volume') {
+                    // Dibujar rectángulo como 4 líneas
+                    const p1 = {x: pts[0].x, z: pts[0].z}; const p2 = {x: pts[1].x, z: pts[0].z}; const p3 = {x: pts[1].x, z: pts[1].z}; const p4 = {x: pts[0].x, z: pts[1].z};
+                    const rectPts = [p1, p2, p3, p4, p1];
+                    for(let i=1; i<rectPts.length; i++) {
+                        dxf += `0\nLINE\n8\nAreas\n10\n${rectPts[i-1].x}\n20\n${-rectPts[i-1].z}\n11\n${rectPts[i].x}\n21\n${-rectPts[i].z}\n`;
+                    }
+                } else if(m.tool === 'circle') {
+                    dxf += `0\nCIRCLE\n8\nCircles\n10\n${pts[0].x}\n20\n${-pts[0].z}\n40\n${m.results.r}\n`;
+                }
+            });
+            dxf += "0\nENDSEC\n0\nEOF\n";
+            const blob = new Blob([dxf], { type: 'application/dxf' });
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'AR_Measurement_CAD.dxf'; link.click();
         });
+
     </script>
 </body>
 </html>

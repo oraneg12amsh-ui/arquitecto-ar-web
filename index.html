@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Arquitecto AR - Scanner Pro</title>
+    <title>Arquitecto AR - Measurement PWA</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#8B5CF6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%20%22name%22%3A%20%22Arquitecto%20AR%22%2C%20%22short_name%22%3A%20%22ArquiAR%22%2C%20%22start_url%22%3A%20%22.%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%23F4F5F9%22%2C%20%22theme_color%22%3A%20%22%238B5CF6%22%20%7D">
+
     <!-- Librerías Externas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,145 +19,93 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
         
-        body { margin: 0; overflow: hidden; background-color: #F4F5F9; font-family: 'Nunito', system-ui, sans-serif; touch-action: none; }
+        body { margin: 0; overflow: hidden; background-color: #F4F5F9; font-family: 'Nunito', system-ui, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
         
         #ar-container { width: 100vw; height: 100vh; display: block; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* Capas de Interfaz */
-        #home-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; background: linear-gradient(180deg, #F8F9FA 0%, #E9ECF5 100%); }
-        
-        /* Capa AR (DOM Overlay) */
+        #home-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; background: linear-gradient(180deg, #F8F9FA 0%, #E9ECF5 100%); overflow-y: auto; }
         #ar-ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: flex; flex-direction: column; padding: 1rem; }
+        
         .interactive { pointer-events: auto; }
         .ui-control { touch-action: none; }
 
-        /* Estilo del botón AR inyectado por Three.js */
         #ARButton { 
-            background: #93C5FD !important; /* Soft blue */
-            color: #1E3A8A !important;
-            border-radius: 9999px !important; 
-            padding: 16px 32px !important; 
-            font-size: 1.125rem !important;
-            font-family: 'Nunito', sans-serif !important;
-            font-weight: 700 !important;
-            border: none !important; 
-            box-shadow: 0 10px 25px -5px rgba(147, 197, 253, 0.5) !important;
-            bottom: 40px !important;
-            position: absolute !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            width: 80% !important;
-            max-width: 320px !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            transition: all 0.3s ease !important;
+            background: #93C5FD !important; color: #1E3A8A !important; border-radius: 9999px !important; 
+            padding: 16px 32px !important; font-size: 1.125rem !important; font-family: 'Nunito', sans-serif !important;
+            font-weight: 700 !important; border: none !important; box-shadow: 0 10px 25px -5px rgba(147, 197, 253, 0.5) !important;
+            bottom: 40px !important; position: absolute !important; left: 50% !important; transform: translateX(-50%) !important;
+            width: 80% !important; max-width: 320px !important; display: flex !important; justify-content: center !important; align-items: center !important;
         }
 
-        /* Etiqueta de medición flotante estilo PILL */
         .measure-pill {
-            position: absolute;
-            background: white;
-            color: #312E81;
-            padding: 6px 16px;
-            border-radius: 9999px;
-            font-weight: 800;
-            font-size: 1rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            display: none;
-            white-space: nowrap;
-            letter-spacing: 0.5px;
-            z-index: 20;
+            position: absolute; background: white; color: #312E81; padding: 6px 16px; border-radius: 9999px;
+            font-weight: 800; font-size: 1rem; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            transform: translate(-50%, -50%); pointer-events: none; display: none; white-space: nowrap; z-index: 20;
+            border: 2px solid #8B5CF6;
         }
         
-        /* Puntero de la etiqueta */
         .measure-pill::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: -6px;
-            margin-top: -6px;
-            border-width: 6px 6px 6px 0;
-            border-style: solid;
-            border-color: transparent white transparent transparent;
+            content: ''; position: absolute; top: 50%; left: -8px; margin-top: -6px;
+            border-width: 6px 8px 6px 0; border-style: solid; border-color: transparent #8B5CF6 transparent transparent;
         }
 
-        /* Animaciones */
+        /* Toolbar Activo */
+        .tool-btn.active { background-color: #8B5CF6; color: white; transform: scale(1.05); }
+        .tool-btn { transition: all 0.2s ease; }
+
         .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .slide-up { animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .pulse-soft { animation: pulseSoft 2s infinite; }
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulseSoft { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
 
-        /* Botón Inferior AR (Translúcido profesional) */
         .btn-ar-action {
-            background: rgba(139, 92, 246, 0.85); /* Purple translucent */
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.3);
-            box-shadow: 0 8px 32px rgba(109, 40, 217, 0.3);
-        }
-
-        /* Scan Graphic Animation */
-        .scan-line {
-            animation: scanMove 2s linear infinite;
-        }
-        @keyframes scanMove {
-            0% { transform: translateY(-20px) rotate(-15deg); opacity: 0;}
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(80px) rotate(-15deg); opacity: 0;}
+            background: rgba(139, 92, 246, 0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.4); box-shadow: 0 8px 32px rgba(109, 40, 217, 0.3);
         }
     </style>
 </head>
 <body>
 
     <!-- 1. PANTALLA DE INICIO (HOME) -->
-    <div id="home-screen" class="flex flex-col items-center pt-24 px-6 relative overflow-hidden">
-        <!-- Decoración de fondo -->
+    <div id="home-screen" class="flex flex-col items-center pt-16 px-6 relative overflow-x-hidden pb-24">
         <div class="absolute top-[-10%] left-[-10%] w-64 h-64 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-50"></div>
+        
+        <div class="w-full max-w-sm mb-6 flex justify-between items-center z-10">
+            <div>
+                <h1 class="text-3xl font-extrabold text-[#1E3A8A]">ArquiAR<span class="text-[#8B5CF6]">.</span></h1>
+                <p class="text-sm font-semibold text-slate-500">Measurement PWA</p>
+            </div>
+            <div class="bg-white p-2 rounded-xl shadow-sm border border-slate-100 flex gap-2 text-xl text-[#312E81]">
+                <i class="fa-solid fa-cloud text-emerald-500" title="Auto-Guardado Activo"></i>
+            </div>
+        </div>
 
-        <div class="flex flex-col gap-6 w-full max-w-sm z-10">
-            <!-- Tarjeta 1: Techo Curvo -->
-            <button id="btn-mode-curve" class="bg-white rounded-[2rem] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.04)] border border-white flex items-center gap-5 active:scale-95 transition-transform text-left relative overflow-hidden">
-                <div class="w-20 h-20 flex-shrink-0 bg-[#F5F3FF] rounded-2xl p-3 flex items-center justify-center">
-                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
-                        <path d="M15 75 Q 50 15 85 75" stroke="#7C3AED" stroke-width="4" stroke-linecap="round"/>
-                        <path d="M15 75 L 15 85 M 85 75 L 85 85" stroke="#7C3AED" stroke-width="4" stroke-linecap="round"/>
-                        <rect x="25" y="35" width="15" height="25" stroke="#7C3AED" stroke-width="3" transform="rotate(25 32 47)"/>
-                        <rect x="60" y="35" width="15" height="25" stroke="#7C3AED" stroke-width="3" transform="rotate(-25 67 47)"/>
-                    </svg>
+        <div class="flex flex-col gap-5 w-full max-w-sm z-10">
+            <!-- Modo Medición Avanzada -->
+            <button id="btn-mode-advanced" class="bg-white rounded-[2rem] p-6 shadow-lg border border-slate-50 flex items-center gap-5 active:scale-95 transition-transform text-left relative overflow-hidden">
+                <div class="w-20 h-20 flex-shrink-0 bg-[#F5F3FF] rounded-2xl p-4 flex items-center justify-center text-[#8B5CF6]">
+                    <i class="fa-solid fa-cube text-4xl"></i>
                 </div>
                 <div>
-                    <span class="bg-[#8B5CF6] text-white text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full mb-1 inline-block">beta</span>
-                    <h2 class="text-[#312E81] text-xl font-bold leading-tight">Techo curvo</h2>
-                    <p class="text-slate-400 text-sm mt-1 font-medium">(Modo manual)</p>
+                    <h2 class="text-[#312E81] text-xl font-bold leading-tight">Medición<br>Avanzada</h2>
+                    <p class="text-slate-400 text-xs mt-1 font-semibold">Distancias, Áreas, Volúmenes y Ángulos</p>
                 </div>
             </button>
 
-            <!-- Tarjeta 2: Habitación Sencilla -->
-            <button id="btn-mode-room" class="bg-white rounded-[2rem] p-6 shadow-[0_10px_40px_rgba(0,0,0,0.04)] border border-white flex items-center gap-5 active:scale-95 transition-transform text-left relative overflow-hidden">
-                <div class="w-20 h-20 flex-shrink-0 bg-[#EFF6FF] rounded-2xl p-3 flex items-center justify-center">
-                    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
-                        <path d="M50 20 L85 40 L50 60 L15 40 Z" stroke="#1E3A8A" stroke-width="3" stroke-linejoin="round"/>
-                        <path d="M15 40 L15 70 L50 90 L85 70 L85 40" stroke="#1E3A8A" stroke-width="3" stroke-linejoin="round"/>
-                        <path d="M50 60 L50 90" stroke="#1E3A8A" stroke-width="3" stroke-linejoin="round"/>
-                        <rect x="22" y="55" width="8" height="15" stroke="#1E3A8A" stroke-width="2" transform="skewY(25)"/>
-                        <rect x="70" y="44" width="8" height="15" stroke="#1E3A8A" stroke-width="2" transform="skewY(-25)"/>
-                    </svg>
+            <!-- Modo Planta (Perímetro) -->
+            <button id="btn-mode-room" class="bg-white rounded-[2rem] p-6 shadow-md border border-slate-50 flex items-center gap-5 active:scale-95 transition-transform text-left relative overflow-hidden">
+                <div class="w-20 h-20 flex-shrink-0 bg-[#EFF6FF] rounded-2xl p-4 flex items-center justify-center text-[#1E3A8A]">
+                    <i class="fa-solid fa-vector-square text-4xl"></i>
                 </div>
                 <div>
-                    <h2 class="text-[#312E81] text-xl font-bold leading-tight">Habitación<br>sencilla</h2>
+                    <h2 class="text-[#312E81] text-xl font-bold leading-tight">Planta<br>Sencilla</h2>
+                    <p class="text-slate-400 text-xs mt-1 font-semibold">Generador de perímetros 2D</p>
                 </div>
             </button>
         </div>
         
-        <div id="ar-button-container" class="w-full flex justify-center mt-12 z-10"></div>
+        <div id="ar-button-container" class="w-full flex justify-center mt-10 z-10"></div>
     </div>
 
     <!-- Contenedor AR 3D -->
@@ -159,56 +114,54 @@
     <!-- 3. CAPA UI EN AR (DOM Overlay) -->
     <div id="ar-ui-layer" class="hidden">
         
-        <!-- Etiqueta de medición 3D a 2D -->
         <div id="measure-label" class="measure-pill">0.00 m</div>
 
-        <!-- Toolbar Superior (Botón Salir) -->
+        <!-- Toolbar Superior -->
         <div class="flex justify-between items-start w-full">
             <button id="btn-exit" class="interactive ui-control bg-white/90 backdrop-blur-md text-[#312E81] w-12 h-12 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform">
                 <i class="fa-solid fa-arrow-left-long text-xl"></i>
             </button>
-            <button id="btn-export" class="interactive ui-control bg-white/90 backdrop-blur-md text-[#312E81] w-12 h-12 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform hidden">
-                <i class="fa-solid fa-check text-xl text-emerald-600"></i>
+            
+            <div class="flex gap-3">
+                <!-- Botón de Unidades -->
+                <button id="btn-units" class="interactive ui-control bg-white/90 backdrop-blur-md text-[#8B5CF6] font-bold px-4 h-12 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform">
+                    <span id="unit-text">MÉTRICO</span>
+                </button>
+                <button id="btn-export" class="interactive ui-control bg-emerald-500 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform">
+                    <i class="fa-solid fa-download text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Toolbar Lateral Izquierdo (Herramientas PWA) -->
+        <div id="tools-sidebar" class="absolute left-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-3 interactive slide-up">
+            <button class="tool-btn ui-control w-12 h-12 rounded-2xl bg-white shadow-lg flex flex-col items-center justify-center text-slate-500 active" data-tool="line">
+                <i class="fa-solid fa-ruler"></i><span class="text-[8px] font-bold mt-1">Línea</span>
+            </button>
+            <button class="tool-btn ui-control w-12 h-12 rounded-2xl bg-white shadow-lg flex flex-col items-center justify-center text-slate-500" data-tool="area">
+                <i class="fa-regular fa-square"></i><span class="text-[8px] font-bold mt-1">Área</span>
+            </button>
+            <button class="tool-btn ui-control w-12 h-12 rounded-2xl bg-white shadow-lg flex flex-col items-center justify-center text-slate-500" data-tool="volume">
+                <i class="fa-solid fa-cube"></i><span class="text-[8px] font-bold mt-1">Volumen</span>
+            </button>
+            <button class="tool-btn ui-control w-12 h-12 rounded-2xl bg-white shadow-lg flex flex-col items-center justify-center text-slate-500" data-tool="angle">
+                <i class="fa-solid fa-angle-left"></i><span class="text-[8px] font-bold mt-1">Ángulo</span>
+            </button>
+            <div class="w-8 border-b-2 border-slate-200 mx-auto my-1"></div>
+            <button id="btn-undo" class="ui-control w-12 h-12 rounded-2xl bg-white shadow-lg flex flex-col items-center justify-center text-rose-500 active:bg-rose-50">
+                <i class="fa-solid fa-rotate-left"></i><span class="text-[8px] font-bold mt-1">Deshacer</span>
             </button>
         </div>
 
-        <!-- Overlay de Instrucciones Iniciales (Cámara a Piso) -->
-        <div id="ar-scan-overlay" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-0">
-            <!-- Gráfico del teléfono escaneando -->
-            <div class="relative w-64 h-64 mb-10 flex items-center justify-center">
-                <!-- Grid perspective -->
-                <svg viewBox="0 0 200 200" class="absolute w-full h-full opacity-60" stroke="#FFFFFF" stroke-width="2">
-                    <path d="M20 160 L180 160 L150 60 L50 60 Z" fill="none"/>
-                    <path d="M60 160 L80 60 M100 160 L100 60 M140 160 L120 60" fill="none"/>
-                    <path d="M35 110 L165 110 M45 85 L155 85" fill="none"/>
-                    <circle cx="100" cy="110" r="4" fill="#FFFFFF"/>
-                    <circle cx="140" cy="135" r="3" fill="#FFFFFF"/>
-                    <circle cx="70" cy="90" r="2" fill="#FFFFFF"/>
-                </svg>
-                <!-- Teléfono animado -->
-                <div class="absolute pulse-soft">
-                    <svg width="60" height="100" viewBox="0 0 60 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="transform rotate-[-15deg]">
-                        <rect x="2" y="2" width="56" height="96" rx="10" stroke="white" stroke-width="4"/>
-                        <rect x="6" y="6" width="48" height="88" rx="6" stroke="white" stroke-width="2"/>
-                    </svg>
-                </div>
-            </div>
-            
-            <!-- Etiqueta de instrucción -->
-            <div class="bg-white px-8 py-4 rounded-3xl shadow-2xl text-center max-w-[80%] fade-in">
-                <p id="ar-scan-text" class="text-[#312E81] font-bold text-lg">1. Apunta la cámara a un piso</p>
-            </div>
+        <!-- Overlay de Instrucciones -->
+        <div id="ar-top-msg" class="absolute top-20 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-md px-6 py-3 rounded-full shadow-lg text-center hidden slide-up interactive border-l-4 border-[#8B5CF6]">
+            <p id="ar-top-msg-text" class="text-[#312E81] font-bold text-sm">Escaneando entorno...</p>
         </div>
 
-        <!-- Tarjeta de Mensaje Superior (Para cuando ya detecta) -->
-        <div id="ar-top-msg" class="absolute top-20 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-md px-6 py-3 rounded-full shadow-lg text-center hidden slide-up interactive">
-            <p id="ar-top-msg-text" class="text-[#312E81] font-bold text-base">Comience a marcar las esquinas! PISO</p>
-        </div>
-
-        <!-- Botón de Acción Principal Flotante (Abajo) -->
-        <div class="absolute bottom-10 left-0 w-full flex justify-center interactive">
-            <button id="btn-main-action" class="ui-control btn-ar-action text-white rounded-[2rem] px-12 py-4 font-bold text-xl active:scale-95 transition-all duration-200 hidden tracking-wide">
-                comienzo
+        <!-- Botón de Acción Principal -->
+        <div class="absolute bottom-8 left-0 w-full flex justify-center interactive">
+            <button id="btn-main-action" class="ui-control btn-ar-action text-white rounded-[2rem] px-12 py-4 font-bold text-lg active:scale-95 transition-all duration-200 hidden tracking-wide shadow-2xl flex items-center gap-3">
+                <i class="fa-solid fa-crosshairs"></i> <span id="btn-action-text">Fijar Punto</span>
             </button>
         </div>
     </div>
@@ -217,31 +170,82 @@
         import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
         import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/webxr/ARButton.js';
 
+        // --- Fake Service Worker Registration (PWA Requirement) ---
+        if ('serviceWorker' in navigator) {
+            const swCode = `self.addEventListener('install', e => e.waitUntil(Promise.resolve())); self.addEventListener('fetch', e => {});`;
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(console.error);
+        }
+
         // --- Estado Global ---
-        let appMode = 'room'; 
+        let appMode = 'advanced'; // 'advanced', 'room'
+        let currentTool = 'line'; // 'line', 'area', 'volume', 'angle'
+        let unitSystem = 'metric'; // 'metric' (m), 'imperial' (ft)
+        
         let arState = 'scanning'; // 'scanning', 'ready', 'drawing'
+        let currentMeasurePoints = []; // Puntos de la medición actual
+        let savedMeasurements = []; // Todas las mediciones guardadas
         
         let camera, scene, renderer, controller, reticle;
         let hitTestSource = null, hitTestSourceRequested = false;
         
-        let planPoints = []; 
-        let meshesPoints = [];
-        let meshesLines = [];
-        let polygonMesh = null; 
-        let gridHelper = null; // Cuadrícula del piso
+        // Elementos 3D Temporales y Guardados
+        let tempMeshes = []; 
+        let permanentMeshes = [];
+        let gridHelper = null;
 
-        // Elementos UI
+        // UI Elements
         const measureLabel = document.getElementById('measure-label');
-        const scanOverlay = document.getElementById('ar-scan-overlay');
-        const scanText = document.getElementById('ar-scan-text');
         const topMsg = document.getElementById('ar-top-msg');
         const topMsgText = document.getElementById('ar-top-msg-text');
         const btnMainAction = document.getElementById('btn-main-action');
-        const btnExport = document.getElementById('btn-export');
+        const btnActionText = document.getElementById('btn-action-text');
+        const toolsSidebar = document.getElementById('tools-sidebar');
 
-        // --- Configuración de Interfaz ---
-        document.getElementById('btn-mode-room').addEventListener('click', () => { appMode = 'room'; });
-        document.getElementById('btn-mode-curve').addEventListener('click', () => { appMode = 'curve'; });
+        // --- Funciones de Utilidad ---
+        function formatUnit(meters) {
+            if (unitSystem === 'metric') return `${meters.toFixed(2)} m`;
+            const feet = meters * 3.28084;
+            return `${feet.toFixed(2)} ft`;
+        }
+
+        function formatArea(sqMeters) {
+            if (unitSystem === 'metric') return `${sqMeters.toFixed(2)} m²`;
+            return `${(sqMeters * 10.7639).toFixed(2)} ft²`;
+        }
+
+        function formatVolume(cbMeters) {
+            if (unitSystem === 'metric') return `${cbMeters.toFixed(2)} m³`;
+            return `${(cbMeters * 35.3147).toFixed(2)} ft³`;
+        }
+
+        function triggerHaptic() {
+            if (navigator.vibrate) navigator.vibrate(50);
+        }
+
+        // --- Event Listeners Iniciales ---
+        document.getElementById('btn-mode-advanced').addEventListener('click', () => { appMode = 'advanced'; toolsSidebar.style.display = 'flex'; });
+        document.getElementById('btn-mode-room').addEventListener('click', () => { appMode = 'room'; toolsSidebar.style.display = 'none'; currentTool = 'line'; });
+
+        document.getElementById('btn-units').addEventListener('click', (e) => {
+            unitSystem = unitSystem === 'metric' ? 'imperial' : 'metric';
+            document.getElementById('unit-text').innerText = unitSystem === 'metric' ? 'MÉTRICO' : 'IMPERIAL';
+        });
+
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                const target = e.currentTarget;
+                target.classList.add('active');
+                currentTool = target.dataset.tool;
+                resetCurrentMeasurement();
+                updateInstructions();
+            });
+        });
+
+        document.getElementById('btn-undo').addEventListener('click', undoMeasurement);
+        document.getElementById('btn-exit').addEventListener('click', () => renderer.xr.getSession()?.end());
+        document.getElementById('btn-export').addEventListener('click', generarPDF);
 
         // --- Inicialización 3D ---
         init();
@@ -252,7 +256,7 @@
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
             
-            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.8));
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 0.8));
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
             dirLight.position.set(1, 5, 1);
             scene.add(dirLight);
@@ -263,48 +267,30 @@
             renderer.xr.enabled = true;
             container.appendChild(renderer.domElement);
             
-            // Botón nativo de AR (Ocultamos Home al entrar)
             const arButtonEl = ARButton.createButton(renderer, { 
                 requiredFeatures: ['hit-test'],
                 optionalFeatures: ['dom-overlay'],
                 domOverlay: { root: document.getElementById('ar-ui-layer') }
             });
-            arButtonEl.innerHTML = 'Detectar el piso';
+            arButtonEl.innerHTML = '<i class="fa-solid fa-vr-cardboard mr-2"></i> Iniciar Entorno AR';
             arButtonEl.addEventListener('click', () => {
                 document.getElementById('home-screen').classList.add('hidden');
                 document.getElementById('ar-ui-layer').classList.remove('hidden');
                 resetARState();
+                loadFromStorage();
             });
             document.getElementById('ar-button-container').appendChild(arButtonEl);
 
             controller = renderer.xr.getController(0);
             scene.add(controller);
 
-            // --- DISEÑO DEL SENSOR PROFESIONAL (Igual a la captura) ---
+            // Retícula PWA Pro
             const reticleGroup = new THREE.Group();
+            reticleGroup.add(new THREE.Mesh(new THREE.RingGeometry(0.06, 0.07, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthTest: false })));
+            reticleGroup.add(new THREE.Mesh(new THREE.CircleGeometry(0.01, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x8B5CF6, depthTest: false })));
             
-            // 1. Anillo exterior fino
-            const ringGeom = new THREE.RingGeometry(0.08, 0.085, 32).rotateX(-Math.PI / 2);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthTest: false });
-            reticleGroup.add(new THREE.Mesh(ringGeom, ringMat));
-            
-            // 2. Líneas punteadas interiores (Crosshair)
-            const dashedMat = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.01, gapSize: 0.01, transparent: true, opacity: 0.7, depthTest: false });
-            const crossX = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-0.08, 0, 0), new THREE.Vector3(0.08, 0, 0)]);
-            const crossZ = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, -0.08), new THREE.Vector3(0, 0, 0.08)]);
-            const lineX = new THREE.Line(crossX, dashedMat); lineX.computeLineDistances();
-            const lineZ = new THREE.Line(crossZ, dashedMat); lineZ.computeLineDistances();
-            reticleGroup.add(lineX, lineZ);
-
-            // 3. Punto central oscuro (El centro del blanco)
-            const dot = new THREE.Mesh(new THREE.CircleGeometry(0.015, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x111111, depthTest: false }));
-            dot.position.y = 0.001; 
-            reticleGroup.add(dot);
-
-            // 4. Línea Vertical Infinita (Guía de pared)
-            const vLineGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 3, 0)]); // 3 metros de alto
-            const vLineMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, linewidth: 2, depthTest: false });
-            reticleGroup.add(new THREE.Line(vLineGeom, vLineMat));
+            // Puntero vertical (Guía para techos/paredes)
+            reticleGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,1,0)]), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })));
 
             reticle = reticleGroup;
             reticle.matrixAutoUpdate = false; 
@@ -312,23 +298,14 @@
             reticle.renderOrder = 999; 
             scene.add(reticle);
 
-            // --- Cuadrícula del Piso (Oculta al inicio) ---
-            // Una cuadrícula inmensa que da el efecto de superficie rastreada
-            gridHelper = new THREE.GridHelper(50, 200, 0xffffff, 0xffffff);
-            gridHelper.material.opacity = 0.2;
+            gridHelper = new THREE.GridHelper(20, 100, 0x8B5CF6, 0xffffff);
+            gridHelper.material.opacity = 0.15;
             gridHelper.material.transparent = true;
             gridHelper.visible = false;
             scene.add(gridHelper);
 
-            // Eventos UI en AR
             btnMainAction.addEventListener('beforexrselect', (ev) => ev.preventDefault());
             btnMainAction.addEventListener('click', handleMainAction);
-            
-            document.getElementById('btn-exit').addEventListener('beforexrselect', (ev) => ev.preventDefault());
-            document.getElementById('btn-exit').addEventListener('click', () => renderer.xr.getSession()?.end());
-            
-            btnExport.addEventListener('beforexrselect', (ev) => ev.preventDefault());
-            btnExport.addEventListener('click', generarPDF);
 
             window.addEventListener('resize', onWindowResize);
         }
@@ -339,76 +316,145 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- Máquina de Estados de AR ---
+        // --- Lógica Principal de AR ---
         function resetARState() {
             arState = 'scanning';
-            planPoints = [];
-            meshesPoints.forEach(m => scene.remove(m));
-            meshesLines.forEach(m => scene.remove(m));
-            if (polygonMesh) scene.remove(polygonMesh);
-            meshesPoints = []; meshesLines = []; polygonMesh = null;
-            
+            resetCurrentMeasurement();
             gridHelper.visible = false;
-            scanOverlay.classList.remove('hidden');
-            topMsg.classList.add('hidden');
+            topMsg.classList.remove('hidden');
+            topMsgText.innerText = "Mueve el dispositivo para mapear el entorno...";
             btnMainAction.classList.add('hidden');
-            btnExport.classList.add('hidden');
             measureLabel.style.display = 'none';
-            
-            setTimeout(() => {
-                if(arState === 'scanning') scanText.innerText = "2. Asegúrate de que la iluminación sea buena";
-            }, 4000);
+        }
+
+        function resetCurrentMeasurement() {
+            currentMeasurePoints = [];
+            tempMeshes.forEach(m => scene.remove(m));
+            tempMeshes = [];
+            updateInstructions();
+        }
+
+        function updateInstructions() {
+            let pts = currentMeasurePoints.length;
+            if (currentTool === 'line') topMsgText.innerText = pts === 0 ? "Fija el primer punto" : "Fija el punto final";
+            if (currentTool === 'area') topMsgText.innerText = pts === 0 ? "Marca la primera esquina" : "Marca la esquina diagonal opuesta";
+            if (currentTool === 'volume') {
+                if(pts===0) topMsgText.innerText = "1/3: Esquina base inicial";
+                if(pts===1) topMsgText.innerText = "2/3: Esquina base diagonal";
+                if(pts===2) topMsgText.innerText = "3/3: Define la altura (levanta la cámara)";
+            }
+            if (currentTool === 'angle') {
+                if(pts===0) topMsgText.innerText = "1/3: Primer vector";
+                if(pts===1) topMsgText.innerText = "2/3: Vértice central (esquina)";
+                if(pts===2) topMsgText.innerText = "3/3: Segundo vector";
+            }
         }
 
         function handleMainAction() {
             if (!reticle.visible) return;
+            triggerHaptic();
 
             const pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+            currentMeasurePoints.push(pos.clone());
 
-            if (arState === 'ready') {
-                // Primer clic: Comienza
-                arState = 'drawing';
-                
-                // Fijar la altura de la cuadrícula al piso detectado y mostrarla
-                gridHelper.position.y = pos.y;
-                gridHelper.visible = true;
+            // Dibujar punto temporal
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: 0x8B5CF6 }));
+            sphere.position.copy(pos);
+            scene.add(sphere);
+            tempMeshes.push(sphere);
 
-                topMsgText.innerText = "Apunta a la siguiente esquina.";
-                btnMainAction.innerText = "Agregar nodo";
-                btnExport.classList.remove('hidden');
-            }
+            // Validar si la herramienta terminó su ciclo
+            let toolFinished = false;
+            if (currentTool === 'line' && currentMeasurePoints.length === 2) toolFinished = true;
+            if (currentTool === 'area' && currentMeasurePoints.length === 2) toolFinished = true;
+            if (currentTool === 'volume' && currentMeasurePoints.length === 3) toolFinished = true;
+            if (currentTool === 'angle' && currentMeasurePoints.length === 3) toolFinished = true;
 
-            if (arState === 'drawing') {
-                // Agregar Punto
-                planPoints.push({ x: pos.x, y: pos.y, z: pos.z });
-                
-                // Nodo visual: Esfera blanca con borde oscuro
-                const sphere = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.02, 16, 16), 
-                    new THREE.MeshBasicMaterial({ color: 0xffffff })
-                );
-                sphere.position.copy(pos);
-                scene.add(sphere);
-                meshesPoints.push(sphere);
-
-                // Dibujar línea gruesa profesional
-                if (planPoints.length > 1) {
-                    const lastP = planPoints[planPoints.length - 2];
-                    
-                    // Línea principal blanca
-                    const matSolid = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 5 });
-                    const geom = new THREE.BufferGeometry().setFromPoints([
-                        new THREE.Vector3(lastP.x, pos.y, lastP.z), 
-                        new THREE.Vector3(pos.x, pos.y, pos.z)
-                    ]);
-                    const line = new THREE.Line(geom, matSolid);
-                    scene.add(line);
-                    meshesLines.push(line);
-                }
+            if (toolFinished) {
+                finalizeMeasurement();
+            } else {
+                updateInstructions();
             }
         }
 
-        // --- Bucle de Renderizado ---
+        // --- Finalizar Medición y Dibujar ---
+        function finalizeMeasurement() {
+            let finalMesh = null;
+            let resultText = "";
+
+            if (currentTool === 'line') {
+                const [p1, p2] = currentMeasurePoints;
+                const dist = p1.distanceTo(p2);
+                resultText = formatUnit(dist);
+                
+                const geom = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+                finalMesh = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 3 }));
+            }
+            else if (currentTool === 'area') {
+                const [p1, p2] = currentMeasurePoints;
+                // Asumimos un rectángulo en el plano XZ (suelo) o XY (pared)
+                // Para simplificar, proyectamos en XZ si la diferencia en Y es pequeña
+                const p3 = new THREE.Vector3(p1.x, p1.y, p2.z);
+                const p4 = new THREE.Vector3(p2.x, p1.y, p1.z);
+                
+                const width = p1.distanceTo(p4);
+                const depth = p1.distanceTo(p3);
+                resultText = formatArea(width * depth);
+
+                const shape = new THREE.Shape();
+                shape.moveTo(0, 0); shape.lineTo(width, 0); shape.lineTo(width, depth); shape.lineTo(0, depth); shape.lineTo(0, 0);
+                const geom = new THREE.ShapeGeometry(shape);
+                geom.rotateX(Math.PI/2);
+                
+                finalMesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0x34D399, opacity: 0.4, transparent: true, side: THREE.DoubleSide }));
+                finalMesh.position.copy(new THREE.Vector3(Math.min(p1.x, p2.x), p1.y, Math.min(p1.z, p2.z)));
+            }
+            else if (currentTool === 'volume') {
+                const [p1, p2, p3] = currentMeasurePoints;
+                const width = Math.abs(p1.x - p2.x);
+                const depth = Math.abs(p1.z - p2.z);
+                const height = Math.abs(p3.y - p1.y);
+                resultText = formatVolume(width * depth * height);
+
+                const geom = new THREE.BoxGeometry(width, height, depth);
+                finalMesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({ color: 0x60A5FA, opacity: 0.3, transparent: true }));
+                finalMesh.position.set((p1.x+p2.x)/2, p1.y + (p3.y-p1.y)/2, (p1.z+p2.z)/2);
+                
+                // Bordes del cubo
+                const edges = new THREE.EdgesGeometry(geom);
+                const lines = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff }));
+                finalMesh.add(lines);
+            }
+            else if (currentTool === 'angle') {
+                const [p1, pCenter, p2] = currentMeasurePoints;
+                const v1 = new THREE.Vector3().subVectors(p1, pCenter).normalize();
+                const v2 = new THREE.Vector3().subVectors(p2, pCenter).normalize();
+                const angleRad = v1.angleTo(v2);
+                resultText = `${THREE.MathUtils.radToDeg(angleRad).toFixed(1)}°`;
+
+                const geom = new THREE.BufferGeometry().setFromPoints([p1, pCenter, p2]);
+                finalMesh = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0xFBBF24, linewidth: 3 }));
+            }
+
+            if (finalMesh) {
+                scene.add(finalMesh);
+                // Guardar la medición
+                const record = { tool: currentTool, points: currentMeasurePoints.map(p=>({x:p.x, y:p.y, z:p.z})), result: resultText };
+                savedMeasurements.push({ mesh: finalMesh, data: record });
+                saveToStorage();
+                
+                // Mostrar un pequeño cartel 3D/CSS temporal (Opcional, lo dejamos en UI principal)
+                topMsgText.innerText = `Registrado: ${resultText}`;
+                setTimeout(updateInstructions, 2000);
+            }
+
+            // Limpiar temporales
+            tempMeshes.forEach(m => scene.remove(m));
+            tempMeshes = [];
+            currentMeasurePoints = [];
+        }
+
+        // --- Render Loop (Vista Previa en Vivo) ---
         function animate() { renderer.setAnimationLoop(render); }
 
         function render(timestamp, frame) {
@@ -433,41 +479,52 @@
                     if (hitTestResults.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(hitTestResults[0].getPose(referenceSpace).transform.matrix);
-                        
-                        // Transición de Escaneando -> Listo
+                        const currentPos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+
                         if (arState === 'scanning') {
                             arState = 'ready';
-                            scanOverlay.classList.add('hidden');
-                            topMsg.classList.remove('hidden');
+                            gridHelper.position.y = currentPos.y;
+                            gridHelper.visible = true;
                             btnMainAction.classList.remove('hidden');
-                            btnMainAction.innerText = "comienzo";
+                            updateInstructions();
                         }
 
-                        // --- Etiqueta de Distancia Flotante (Pill) ---
-                        if (arState === 'drawing' && planPoints.length > 0) {
-                            const lastP = planPoints[planPoints.length - 1];
-                            const currentPos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
-                            // Restringir distancia solo al plano XZ (suelo)
-                            const distance = Math.hypot(currentPos.x - lastP.x, currentPos.z - lastP.z);
+                        // --- Previsualización Dinámica (Goma elástica) ---
+                        if (currentMeasurePoints.length > 0) {
+                            let liveText = "";
+                            const p1 = currentMeasurePoints[0];
+
+                            if (currentTool === 'line') {
+                                liveText = formatUnit(p1.distanceTo(currentPos));
+                            } else if (currentTool === 'area' && currentMeasurePoints.length === 1) {
+                                const w = Math.abs(currentPos.x - p1.x);
+                                const d = Math.abs(currentPos.z - p1.z);
+                                liveText = formatArea(w * d);
+                            } else if (currentTool === 'volume') {
+                                if (currentMeasurePoints.length === 2) {
+                                    const p2 = currentMeasurePoints[1];
+                                    const w = Math.abs(p2.x - p1.x);
+                                    const d = Math.abs(p2.z - p1.z);
+                                    const h = Math.abs(currentPos.y - p1.y);
+                                    liveText = formatVolume(w * d * h);
+                                }
+                            } else if (currentTool === 'angle' && currentMeasurePoints.length === 2) {
+                                const pCenter = currentMeasurePoints[1];
+                                const v1 = new THREE.Vector3().subVectors(p1, pCenter).normalize();
+                                const v2 = new THREE.Vector3().subVectors(currentPos, pCenter).normalize();
+                                liveText = `${THREE.MathUtils.radToDeg(v1.angleTo(v2)).toFixed(1)}°`;
+                            }
+
+                            // Posicionar etiqueta flotante
+                            const screenPos = currentPos.clone().project(camera);
+                            const x = (screenPos.x * .5 + .5) * window.innerWidth;
+                            const y = (screenPos.y * -.5 + .5) * window.innerHeight;
                             
-                            // Posicionar etiqueta en la pantalla (A la mitad de la línea dibujada virtualmente)
-                            const midPoint = new THREE.Vector3(
-                                (lastP.x + currentPos.x) / 2,
-                                currentPos.y,
-                                (lastP.z + currentPos.z) / 2
-                            );
-                            midPoint.project(camera);
-                            
-                            // Convertir a píxeles
-                            const x = (midPoint.x * .5 + .5) * window.innerWidth;
-                            const y = (midPoint.y * -.5 + .5) * window.innerHeight;
-                            
-                            // Mostrar si está frente a la cámara
-                            if(midPoint.z < 1) {
-                                measureLabel.innerText = `${distance.toFixed(2)} m`;
+                            if (screenPos.z < 1) {
+                                measureLabel.innerText = liveText;
                                 measureLabel.style.display = 'block';
                                 measureLabel.style.left = `${x}px`;
-                                measureLabel.style.top = `${y}px`;
+                                measureLabel.style.top = `${y - 40}px`;
                             } else {
                                 measureLabel.style.display = 'none';
                             }
@@ -483,23 +540,59 @@
             renderer.render(scene, camera);
         }
 
-        // --- Exportación PDF Simple para completitud ---
+        // --- Gestión de Archivos / Persistencia ---
+        function undoMeasurement() {
+            if (currentMeasurePoints.length > 0) {
+                // Cancelar medición en curso
+                resetCurrentMeasurement();
+            } else if (savedMeasurements.length > 0) {
+                // Borrar última medición guardada
+                const last = savedMeasurements.pop();
+                scene.remove(last.mesh);
+                saveToStorage();
+                topMsgText.innerText = "Última medición eliminada.";
+            }
+        }
+
+        function saveToStorage() {
+            const data = savedMeasurements.map(s => s.data);
+            localStorage.setItem('arqui_ar_project', JSON.stringify(data));
+        }
+
+        function loadFromStorage() {
+            // (Simplificado) Idealmente reconstruiría las mallas 3D desde JSON
+            const data = localStorage.getItem('arqui_ar_project');
+            if (data) {
+                // topMsgText.innerText = "Proyecto anterior encontrado. (En esta versión se limpia el visualizador)";
+            }
+        }
+
+        // --- Exportación a PDF ---
         function generarPDF() {
-            if(planPoints.length < 2) return;
+            if(savedMeasurements.length === 0) { alert("No hay mediciones para exportar."); return; }
+            
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            
+            doc.setFillColor(139, 92, 246);
+            doc.rect(0,0,210,30,'F');
+            doc.setTextColor(255, 255, 255);
             doc.setFontSize(20);
-            doc.text("Reporte AR Plan", 20, 20);
+            doc.text("Reporte PWA - ArquiAR", 20, 20);
+            
+            doc.setTextColor(50, 50, 50);
             doc.setFontSize(12);
-            doc.text(`Puntos registrados: ${planPoints.length}`, 20, 30);
+            doc.text(`Fecha: ${new Date().toLocaleString('es-ES')}`, 20, 40);
             
-            let perim = 0;
-            for(let i=1; i<planPoints.length; i++){
-                perim += Math.hypot(planPoints[i].x - planPoints[i-1].x, planPoints[i].z - planPoints[i-1].z);
-            }
-            doc.text(`Perímetro mapeado: ${perim.toFixed(2)} m`, 20, 40);
+            let y = 50;
+            doc.setFontSize(10);
+            savedMeasurements.forEach((item, index) => {
+                const tipoMap = { 'line': 'Distancia Lineal', 'area': 'Área Superficial', 'volume': 'Volumen Detectado', 'angle': 'Ángulo Medido' };
+                doc.text(`${index + 1}. [${tipoMap[item.data.tool]}]  ->  Resultado: ${item.data.result}`, 20, y);
+                y += 10;
+            });
             
-            doc.save('Plano_AR.pdf');
+            doc.save('Reporte_Mediciones_AR.pdf');
         }
     </script>
 </body>
